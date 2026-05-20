@@ -57,6 +57,29 @@
   font-size: 1.5rem;
 }
 
+.meltText {
+  flex: 1;
+}
+
+.meltReset {
+  background: none;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: rgba(239, 68, 68, 0.7);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.3rem 0.65rem;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.meltReset:hover {
+  color: #ef4444;
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+}
+
 .meltTitle {
   font-weight: 600;
   margin: 0;

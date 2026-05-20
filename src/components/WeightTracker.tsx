@@ -11,6 +11,7 @@ interface Props {
   profile: UserProfile
   onAdd: (sample: WeightSample) => void
   onDelete: (id: string) => void
+  onResetMelt: () => void
   onBack: () => void
 }
 
@@ -30,7 +31,7 @@ function display(kg: number, units: Units): string {
   return `${(kg * 2.20462).toFixed(1)} lb`
 }
 
-export function WeightTracker({ weights, profile, onAdd, onDelete, onBack }: Props) {
+export function WeightTracker({ weights, profile, onAdd, onDelete, onResetMelt, onBack }: Props) {
   const [range, setRange] = useState<Range>('3M')
   const [showLog, setShowLog] = useState(false)
   const [tipLbsLost, setTipLbsLost] = useState(0)
@@ -87,10 +88,18 @@ export function WeightTracker({ weights, profile, onAdd, onDelete, onBack }: Pro
       {profile.cumulativeBankedCalories > 0 && (
         <div className={styles.meltCard}>
           <span className={styles.meltIcon}>💧</span>
-          <div>
+          <div className={styles.meltText}>
             <p className={styles.meltTitle}>{lbsMelted.toFixed(2)} lbs melted away</p>
             <p className={styles.meltSub}>From converted calorie surplus</p>
           </div>
+          <button
+            className={styles.meltReset}
+            onClick={() => {
+              if (confirm('Reset your melt total back to zero?')) onResetMelt()
+            }}
+          >
+            Reset
+          </button>
         </div>
       )}
 

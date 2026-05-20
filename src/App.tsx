@@ -22,6 +22,14 @@ export default function App() {
     return weights[0].kg
   }, [weights, profile])
 
+  const handleResetMelt = useCallback(async () => {
+    if (!profile) return
+    for (const meal of meals.filter(m => m.kind === 'activityBank')) {
+      await removeMeal(meal.id)
+    }
+    await saveProfile({ ...profile, cumulativeBankedCalories: 0, lastActivityBankDate: null })
+  }, [profile, meals, removeMeal, saveProfile])
+
   const handleConvertBank = useCallback(async (amount: number) => {
     if (!profile) return
     const bankEntry: MealEntry = {
@@ -72,6 +80,7 @@ export default function App() {
         profile={profile}
         onAdd={addWeight}
         onDelete={removeWeight}
+        onResetMelt={handleResetMelt}
         onBack={() => setScreen('dashboard')}
       />
     )
