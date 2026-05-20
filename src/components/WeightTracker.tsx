@@ -9,6 +9,7 @@ interface Props {
   weights: WeightSample[]
   profile: UserProfile
   onAdd: (sample: WeightSample) => void
+  onDelete: (id: string) => void
   onBack: () => void
 }
 
@@ -28,7 +29,7 @@ function display(kg: number, units: Units): string {
   return `${(kg * 2.20462).toFixed(1)} lb`
 }
 
-export function WeightTracker({ weights, profile, onAdd, onBack }: Props) {
+export function WeightTracker({ weights, profile, onAdd, onDelete, onBack }: Props) {
   const [range, setRange] = useState<Range>('3M')
   const [showLog, setShowLog] = useState(false)
   const [inputVal, setInputVal] = useState(
@@ -82,7 +83,7 @@ export function WeightTracker({ weights, profile, onAdd, onBack }: Props) {
         </div>
       )}
 
-      {chartData.length > 1 && (
+      {chartData.length > 0 && (
         <div className={styles.chartSection}>
           <div className={styles.rangeRow}>
             {(['1M', '3M', '6M', '1Y', 'All'] as Range[]).map(r => (
@@ -103,7 +104,14 @@ export function WeightTracker({ weights, profile, onAdd, onBack }: Props) {
               />
               <ReferenceLine y={targetChartVal} stroke="rgba(255,255,255,0.3)" strokeDasharray="5 3"
                 label={{ value: `Goal ${targetDisplay}`, fill: 'rgba(255,255,255,0.4)', fontSize: 10, position: 'insideTopLeft' }} />
-              <Line type="monotone" dataKey="value" stroke="#60a5fa" strokeWidth={2.5} dot={false} />
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke="#60a5fa"
+                strokeWidth={2.5}
+                dot={chartData.length <= 10 ? { r: 4, fill: '#60a5fa', strokeWidth: 0 } : false}
+                activeDot={{ r: 5, fill: '#93c5fd', strokeWidth: 0 }}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -119,10 +127,19 @@ export function WeightTracker({ weights, profile, onAdd, onBack }: Props) {
         ) : (
           weights.map(s => (
             <div key={s.id} className={styles.weightRow}>
-              <span className={styles.weightVal}>{display(s.kg, profile.units)}</span>
-              <span className={styles.weightDate}>
-                {new Date(s.date).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-              </span>
+              <div className={styles.weightInfo}>
+                <span className={styles.weightVal}>{display(s.kg, profile.units)}</span>
+                <span className={styles.weightDate}>
+                  {new Date(s.date).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+              <button
+                className={styles.weightDelete}
+                onClick={() => { if (confirm('Delete this reading?')) onDelete(s.id) }}
+                aria-label="Delete"
+              >
+                🗑
+              </button>
             </div>
           ))
         )}

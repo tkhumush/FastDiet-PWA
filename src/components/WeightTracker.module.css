@@ -112,10 +112,17 @@
 
 .weightRow {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
   padding: 0.7rem 1.25rem;
   border-bottom: 1px solid var(--border);
+}
+
+.weightInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .weightVal {
@@ -126,6 +133,23 @@
 .weightDate {
   font-size: 0.78rem;
   color: var(--text-secondary);
+}
+
+.weightDelete {
+  background: none;
+  border: none;
+  color: rgba(239, 68, 68, 0.5);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.weightDelete:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
 }
 
 .empty {

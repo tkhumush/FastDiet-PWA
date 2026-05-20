@@ -12,7 +12,7 @@ type Screen = 'dashboard' | 'log' | 'weight' | 'profile'
 export default function App() {
   const { profile, loading, save: saveProfile } = useProfile()
   const { meals, add: addMeal, update: updateMeal, remove: removeMeal } = useMeals()
-  const { weights, add: addWeight } = useWeights()
+  const { weights, add: addWeight, remove: removeWeight } = useWeights()
   const { workouts, add: addWorkout, remove: removeWorkout } = useWorkouts()
   const [screen, setScreen] = useState<Screen>('dashboard')
 
@@ -71,6 +71,7 @@ export default function App() {
         weights={weights}
         profile={profile}
         onAdd={addWeight}
+        onDelete={removeWeight}
         onBack={() => setScreen('dashboard')}
       />
     )
