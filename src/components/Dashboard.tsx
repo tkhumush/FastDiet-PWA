@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { UserProfile, MealEntry, WorkoutEntry } from '../types'
-import { summarize, bmrPerHour } from '../fastingMath'
+import { summarize, bmrPerHour, activeEnergyFor } from '../fastingMath'
 import { WaterFill } from './WaterFill'
 import { LogMealModal } from './LogMealModal'
 import { LogWorkoutModal } from './LogWorkoutModal'
@@ -35,20 +35,6 @@ function formatRelative(date: Date): string {
   return `in ${h}h ${m}m`
 }
 
-/** Mirrors iOS refreshActiveEnergy(since:bankCursor:) — sum workout calories in window */
-function activeEnergyFor(
-  workouts: WorkoutEntry[],
-  fastStartedAt: Date | null,
-  bankCursor: string | null
-): number {
-  if (!fastStartedAt) return 0
-  const effectiveStart = bankCursor
-    ? new Date(Math.max(fastStartedAt.getTime(), new Date(bankCursor).getTime()))
-    : fastStartedAt
-  return workouts
-    .filter(w => new Date(w.loggedAt) >= effectiveStart)
-    .reduce((sum, w) => sum + w.caloriesBurned, 0)
-}
 
 export function Dashboard({
   profile, meals, workouts, latestWeightKg,

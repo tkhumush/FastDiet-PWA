@@ -1,4 +1,4 @@
-import type { MealEntry, FastSummary, MealAllocation, Sex } from './types'
+import type { MealEntry, WorkoutEntry, FastSummary, MealAllocation, Sex } from './types'
 
 export function bmrPerHour(sex: Sex, age: number, heightCm: number, targetWeightKg: number): number {
   const daily =
@@ -6,6 +6,20 @@ export function bmrPerHour(sex: Sex, age: number, heightCm: number, targetWeight
       ? 88.362 + 13.397 * targetWeightKg + 4.799 * heightCm - 5.677 * age
       : 447.593 + 9.247 * targetWeightKg + 3.098 * heightCm - 4.33 * age
   return daily / 24
+}
+
+export function activeEnergyFor(
+  workouts: WorkoutEntry[],
+  fastStartedAt: Date | null,
+  bankCursor: string | null
+): number {
+  if (!fastStartedAt) return 0
+  const effectiveStart = bankCursor
+    ? new Date(Math.max(fastStartedAt.getTime(), new Date(bankCursor).getTime()))
+    : fastStartedAt
+  return workouts
+    .filter(w => new Date(w.loggedAt) >= effectiveStart)
+    .reduce((sum, w) => sum + w.caloriesBurned, 0)
 }
 
 export function cmFromFeet(feet: number, inches: number): number {

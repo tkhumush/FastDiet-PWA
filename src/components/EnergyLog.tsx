@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { MealEntry, UserProfile, WorkoutEntry } from '../types'
-import { summarize, bmrPerHour } from '../fastingMath'
+import { summarize, bmrPerHour, activeEnergyFor } from '../fastingMath'
 import { LogMealModal } from './LogMealModal'
 import styles from './EnergyLog.module.css'
 
@@ -43,8 +43,9 @@ export function EnergyLog({ meals, workouts, profile, onUpdate, onDelete, onDele
   const [editingMeal, setEditingMeal] = useState<MealEntry | null>(null)
 
   const bmrHr = bmrPerHour(profile.sex, profile.age, profile.heightCm, profile.targetWeightKg)
-  const totalActivity = workouts.reduce((s, w) => s + w.caloriesBurned, 0)
-  const summary = summarize(meals, bmrHr, totalActivity)
+  const pre = summarize(meals, bmrHr, 0)
+  const activeEnergy = activeEnergyFor(workouts, pre.fastStartedAt, profile.lastActivityBankDate)
+  const summary = summarize(meals, bmrHr, activeEnergy)
 
   // Merge meals + workouts sorted newest-first
   const entries: LogEntry[] = [
@@ -117,7 +118,7 @@ export function EnergyLog({ meals, workouts, profile, onUpdate, onDelete, onDele
                     </div>
                     <p className={styles.date}>{fmtDate(meal.loggedAt)}</p>
                   </div>
-                  {alloc && <DonutRing progress={progress} />}
+                  {alloc && alloc.owed > 0 && <DonutRing progress={progress} />}
                   <div className={styles.rowActions}>
                     {(meal.kind === 'meal' || meal.kind === 'melt') && (
                       <button className={styles.editBtn} onClick={() => setEditingMeal(meal)}>✎</button>
