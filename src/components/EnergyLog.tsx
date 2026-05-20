@@ -31,8 +31,8 @@ function DonutRing({ progress }: { progress: number }) {
         stroke={`hsl(${hue}, 80%, 60%)`}
         strokeWidth={3.5}
         strokeDasharray={`${p * circ} ${circ}`}
-        strokeDashoffset={circ / 4}
         strokeLinecap="round"
+        transform="rotate(-90 17 17)"
         style={{ transition: 'stroke-dasharray 0.4s' }}
       />
     </svg>
