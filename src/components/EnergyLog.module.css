@@ -108,6 +108,19 @@
   color: #f97316;
 }
 
+.workoutRow {
+  background: rgba(74, 222, 128, 0.04);
+}
+
+.workoutThumb {
+  background: rgba(74, 222, 128, 0.12) !important;
+  font-size: 1.6rem;
+}
+
+.workoutCal {
+  color: #4ade80;
+}
+
 .date {
   font-size: 0.7rem;
   color: var(--text-secondary);

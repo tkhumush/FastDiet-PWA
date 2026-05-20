@@ -24,6 +24,16 @@ export interface MealEntry {
   photoDataUrl?: string
 }
 
+export interface WorkoutEntry {
+  id: string
+  loggedAt: string
+  workoutTypeId: string
+  label: string
+  emoji: string
+  durationMinutes: number
+  caloriesBurned: number
+}
+
 export interface WeightSample {
   id: string
   date: string

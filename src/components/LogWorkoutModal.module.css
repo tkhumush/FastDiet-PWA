@@ -1,0 +1,144 @@
+.typeGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.typeBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0.6rem 0.25rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.typeBtnActive {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.typeEmoji {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.typeLabel {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.typeBtnActive .typeLabel {
+  color: rgba(255,255,255,0.85);
+}
+
+.durationPresets {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.durationBtn {
+  padding: 0.35rem 0.8rem;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.durationActive {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.durationCustom {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.durationCustom input {
+  flex: 1;
+}
+
+.durationVal {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  min-width: 4.5ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.calorieSection {
+  background: var(--card-bg);
+  border-radius: 14px;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  text-align: center;
+}
+
+.calorieResult {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+}
+
+.calorieBig {
+  font-size: 3rem;
+  font-weight: 200;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: #4ade80;
+}
+
+.calorieUnit {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.calorieNote {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  margin: 0 0 0.6rem;
+}
+
+.overrideLink {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.overrideRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.overrideInput {
+  width: 80px;
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 1rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}

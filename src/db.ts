@@ -1,13 +1,14 @@
 import { openDB, type IDBPDatabase } from 'idb'
-import type { UserProfile, MealEntry, WeightSample } from './types'
+import type { UserProfile, MealEntry, WeightSample, WorkoutEntry } from './types'
 
 const DB_NAME = 'fastdiet'
-const DB_VERSION = 1
+const DB_VERSION = 2
 
 export type FastDietDB = {
   profile: { key: 'profile'; value: UserProfile }
   meals: { key: string; value: MealEntry; indexes: { byDate: string } }
   weights: { key: string; value: WeightSample; indexes: { byDate: string } }
+  workouts: { key: string; value: WorkoutEntry; indexes: { byDate: string } }
 }
 
 let dbPromise: Promise<IDBPDatabase<FastDietDB>>
@@ -15,17 +16,19 @@ let dbPromise: Promise<IDBPDatabase<FastDietDB>>
 function getDb() {
   if (!dbPromise) {
     dbPromise = openDB<FastDietDB>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains('profile')) {
+      upgrade(db, oldVersion) {
+        if (oldVersion < 1) {
           db.createObjectStore('profile')
-        }
-        if (!db.objectStoreNames.contains('meals')) {
           const ms = db.createObjectStore('meals', { keyPath: 'id' })
           ms.createIndex('byDate', 'loggedAt')
-        }
-        if (!db.objectStoreNames.contains('weights')) {
           const ws = db.createObjectStore('weights', { keyPath: 'id' })
           ws.createIndex('byDate', 'date')
+        }
+        if (oldVersion < 2) {
+          if (!db.objectStoreNames.contains('workouts')) {
+            const wo = db.createObjectStore('workouts', { keyPath: 'id' })
+            wo.createIndex('byDate', 'loggedAt')
+          }
         }
       },
     })
@@ -67,4 +70,16 @@ export async function addWeight(sample: WeightSample): Promise<void> {
 
 export async function deleteWeight(id: string): Promise<void> {
   await (await getDb()).delete('weights', id)
+}
+
+export async function getWorkouts(): Promise<WorkoutEntry[]> {
+  return (await getDb()).getAll('workouts')
+}
+
+export async function addWorkout(workout: WorkoutEntry): Promise<void> {
+  await (await getDb()).put('workouts', workout)
+}
+
+export async function deleteWorkout(id: string): Promise<void> {
+  await (await getDb()).delete('workouts', id)
 }

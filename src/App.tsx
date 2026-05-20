@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import type { MealEntry } from './types'
-import { useProfile, useMeals, useWeights } from './store'
+import { useProfile, useMeals, useWeights, useWorkouts } from './store'
 import { Onboarding } from './components/Onboarding'
 import { Dashboard } from './components/Dashboard'
 import { EnergyLog } from './components/EnergyLog'
@@ -13,7 +13,14 @@ export default function App() {
   const { profile, loading, save: saveProfile } = useProfile()
   const { meals, add: addMeal, update: updateMeal, remove: removeMeal } = useMeals()
   const { weights, add: addWeight } = useWeights()
+  const { workouts, add: addWorkout, remove: removeWorkout } = useWorkouts()
   const [screen, setScreen] = useState<Screen>('dashboard')
+
+  // Use the most recent logged weight for MET estimates, fall back to target weight
+  const latestWeightKg = useMemo(() => {
+    if (weights.length === 0 || !profile) return profile?.targetWeightKg ?? 70
+    return weights[0].kg
+  }, [weights, profile])
 
   const handleConvertBank = useCallback(async (amount: number) => {
     if (!profile) return
@@ -48,9 +55,11 @@ export default function App() {
     return (
       <EnergyLog
         meals={meals}
+        workouts={workouts}
         profile={profile}
         onUpdate={updateMeal}
         onDelete={removeMeal}
+        onDeleteWorkout={removeWorkout}
         onBack={() => setScreen('dashboard')}
       />
     )
@@ -81,7 +90,10 @@ export default function App() {
     <Dashboard
       profile={profile}
       meals={meals}
+      workouts={workouts}
+      latestWeightKg={latestWeightKg}
       onAddMeal={addMeal}
+      onAddWorkout={addWorkout}
       onConvertBank={handleConvertBank}
       onNavigateLog={() => setScreen('log')}
       onNavigateWeight={() => setScreen('weight')}

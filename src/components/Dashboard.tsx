@@ -1,15 +1,19 @@
 import { useState, useEffect } from 'react'
-import type { UserProfile, MealEntry } from '../types'
+import type { UserProfile, MealEntry, WorkoutEntry } from '../types'
 import { summarize, bmrPerHour } from '../fastingMath'
 import { WaterFill } from './WaterFill'
 import { LogMealModal } from './LogMealModal'
+import { LogWorkoutModal } from './LogWorkoutModal'
 import { BankChoiceModal } from './BankChoiceModal'
 import styles from './Dashboard.module.css'
 
 interface Props {
   profile: UserProfile
   meals: MealEntry[]
+  workouts: WorkoutEntry[]
+  latestWeightKg: number
   onAddMeal: (meal: MealEntry) => void
+  onAddWorkout: (workout: WorkoutEntry) => void
   onConvertBank: (amount: number) => void
   onNavigateLog: () => void
   onNavigateWeight: () => void
@@ -31,11 +35,30 @@ function formatRelative(date: Date): string {
   return `in ${h}h ${m}m`
 }
 
-export function Dashboard({ profile, meals, onAddMeal, onConvertBank, onNavigateLog, onNavigateWeight, onNavigateProfile }: Props) {
+/** Mirrors iOS refreshActiveEnergy(since:bankCursor:) — sum workout calories in window */
+function activeEnergyFor(
+  workouts: WorkoutEntry[],
+  fastStartedAt: Date | null,
+  bankCursor: string | null
+): number {
+  if (!fastStartedAt) return 0
+  const effectiveStart = bankCursor
+    ? new Date(Math.max(fastStartedAt.getTime(), new Date(bankCursor).getTime()))
+    : fastStartedAt
+  return workouts
+    .filter(w => new Date(w.loggedAt) >= effectiveStart)
+    .reduce((sum, w) => sum + w.caloriesBurned, 0)
+}
+
+export function Dashboard({
+  profile, meals, workouts, latestWeightKg,
+  onAddMeal, onAddWorkout, onConvertBank,
+  onNavigateLog, onNavigateWeight, onNavigateProfile,
+}: Props) {
   const [now, setNow] = useState(new Date())
   const [showMealModal, setShowMealModal] = useState(false)
+  const [showWorkoutModal, setShowWorkoutModal] = useState(false)
   const [showBankChoice, setShowBankChoice] = useState(false)
-  const [manualActivity, setManualActivity] = useState(0)
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000)
@@ -43,7 +66,11 @@ export function Dashboard({ profile, meals, onAddMeal, onConvertBank, onNavigate
   }, [])
 
   const bmrHr = bmrPerHour(profile.sex, profile.age, profile.heightCm, profile.targetWeightKg)
-  const summary = summarize(meals, bmrHr, manualActivity, now)
+
+  // Two-pass: first get fastStartedAt, then compute active energy for that window
+  const preliminary = summarize(meals, bmrHr, 0, now)
+  const activeEnergy = activeEnergyFor(workouts, preliminary.fastStartedAt, profile.lastActivityBankDate)
+  const summary = summarize(meals, bmrHr, activeEnergy, now)
 
   const dailyAllowance = bmrHr * 24
   const fillFraction = summary.caloriesOwed > 0 ? Math.min(1, summary.caloriesOwed / dailyAllowance) : 0
@@ -54,17 +81,6 @@ export function Dashboard({ profile, meals, onAddMeal, onConvertBank, onNavigate
     } else {
       setShowMealModal(true)
     }
-  }
-
-  function handleBankChoiceUse() {
-    setShowBankChoice(false)
-    setShowMealModal(true)
-  }
-
-  function handleBankChoiceMelt() {
-    onConvertBank(summary.bankBalance)
-    setShowBankChoice(false)
-    setShowMealModal(true)
   }
 
   return (
@@ -121,25 +137,22 @@ export function Dashboard({ profile, meals, onAddMeal, onConvertBank, onNavigate
               <span className={styles.metricLabel}>cal/hr burn</span>
             </div>
             <div className={styles.metricCard}>
-              <span className={styles.metricVal} style={{ color: '#f97316' }}>
-                {manualActivity > 0 ? Math.round(manualActivity) : '—'}
-              </span>
-              <span className={styles.metricLabel}>cal activity</span>
+              {activeEnergy > 0 ? (
+                <>
+                  <span className={styles.metricVal} style={{ color: '#f97316' }}>
+                    {Math.round(activeEnergy)}
+                  </span>
+                  <span className={styles.metricLabel}>cal activity</span>
+                </>
+              ) : (
+                <>
+                  <span className={styles.metricVal} style={{ color: 'rgba(255,255,255,0.25)' }}>—</span>
+                  <span className={styles.metricLabel}>no activity yet</span>
+                </>
+              )}
             </div>
           </div>
         </div>
-
-        {manualActivity === 0 && (
-          <button
-            className={styles.activityBtn}
-            onClick={() => {
-              const val = prompt('Enter calories burned from activity:')
-              if (val && !isNaN(+val)) setManualActivity(prev => prev + +val)
-            }}
-          >
-            + Log activity
-          </button>
-        )}
       </div>
 
       <nav className={styles.bottomNav}>
@@ -149,6 +162,12 @@ export function Dashboard({ profile, meals, onAddMeal, onConvertBank, onNavigate
           </svg>
           <span>Log</span>
         </button>
+        <button onClick={() => setShowWorkoutModal(true)}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={22} height={22}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          <span>Workout</span>
+        </button>
         <button className={styles.logMealBtn} onClick={handleLogMealClick}>
           <svg viewBox="0 0 24 24" fill="currentColor" width={28} height={28}>
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
@@ -157,8 +176,7 @@ export function Dashboard({ profile, meals, onAddMeal, onConvertBank, onNavigate
         </button>
         <button onClick={onNavigateWeight}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={22} height={22}>
-            <circle cx={12} cy={12} r={9}/>
-            <path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>
+            <path strokeLinecap="round" d="M3 17l4-8 4 4 4-6 4 10"/>
           </svg>
           <span>Weight</span>
         </button>
@@ -167,8 +185,8 @@ export function Dashboard({ profile, meals, onAddMeal, onConvertBank, onNavigate
       {showBankChoice && (
         <BankChoiceModal
           bankBalance={summary.bankBalance}
-          onUsBank={handleBankChoiceUse}
-          onMelt={handleBankChoiceMelt}
+          onUsBank={() => { setShowBankChoice(false); setShowMealModal(true) }}
+          onMelt={() => { onConvertBank(summary.bankBalance); setShowBankChoice(false); setShowMealModal(true) }}
           onCancel={() => setShowBankChoice(false)}
         />
       )}
@@ -176,18 +194,25 @@ export function Dashboard({ profile, meals, onAddMeal, onConvertBank, onNavigate
       {showMealModal && (
         <LogMealModal
           onSave={(calories, name, photoDataUrl) => {
-            const meal: MealEntry = {
+            onAddMeal({
               id: crypto.randomUUID(),
               calories,
               loggedAt: new Date().toISOString(),
               name,
               kind: 'meal',
               photoDataUrl,
-            }
-            onAddMeal(meal)
+            })
             setShowMealModal(false)
           }}
           onCancel={() => setShowMealModal(false)}
+        />
+      )}
+
+      {showWorkoutModal && (
+        <LogWorkoutModal
+          weightKg={latestWeightKg}
+          onSave={workout => { onAddWorkout(workout); setShowWorkoutModal(false) }}
+          onCancel={() => setShowWorkoutModal(false)}
         />
       )}
     </div>

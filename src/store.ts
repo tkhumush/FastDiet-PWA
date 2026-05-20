@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import type { UserProfile, MealEntry, WeightSample } from './types'
+import type { UserProfile, MealEntry, WeightSample, WorkoutEntry } from './types'
 import * as db from './db'
 
 export function useProfile() {
@@ -70,4 +70,27 @@ export function useWeights() {
   }, [refresh])
 
   return { weights, add, remove }
+}
+
+export function useWorkouts() {
+  const [workouts, setWorkouts] = useState<WorkoutEntry[]>([])
+
+  const refresh = useCallback(async () => {
+    const all = await db.getWorkouts()
+    setWorkouts(all.sort((a, b) => new Date(a.loggedAt).getTime() - new Date(b.loggedAt).getTime()))
+  }, [])
+
+  useEffect(() => { refresh() }, [refresh])
+
+  const add = useCallback(async (workout: WorkoutEntry) => {
+    await db.addWorkout(workout)
+    await refresh()
+  }, [refresh])
+
+  const remove = useCallback(async (id: string) => {
+    await db.deleteWorkout(id)
+    await refresh()
+  }, [refresh])
+
+  return { workouts, add, remove }
 }
