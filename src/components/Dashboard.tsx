@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import type { UserProfile, MealEntry, WorkoutEntry } from '../types'
 import { summarize, bmrPerHour } from '../fastingMath'
 import { WaterFill } from './WaterFill'
@@ -55,25 +55,65 @@ export function Dashboard({
   onAddMeal, onAddWorkout, onConvertBank,
   onNavigateLog, onNavigateWeight, onNavigateProfile,
 }: Props) {
-  const [now, setNow] = useState(new Date())
   const [showMealModal, setShowMealModal] = useState(false)
   const [showWorkoutModal, setShowWorkoutModal] = useState(false)
   const [showBankChoice, setShowBankChoice] = useState(false)
 
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000)
-    return () => clearInterval(id)
+  const bmrHr = bmrPerHour(profile.sex, profile.age, profile.heightCm, profile.targetWeightKg)
+  const dailyAllowance = bmrHr * 24
+
+  // Refs keep interval callback current without restarting it
+  const mealsRef = useRef(meals)
+  const workoutsRef = useRef(workouts)
+  const profileRef = useRef(profile)
+  const bmrHrRef = useRef(bmrHr)
+  const dailyAllowanceRef = useRef(dailyAllowance)
+  mealsRef.current = meals
+  workoutsRef.current = workouts
+  profileRef.current = profile
+  bmrHrRef.current = bmrHr
+  dailyAllowanceRef.current = dailyAllowance
+
+  const buildView = useCallback((now: Date) => {
+    const bhr = bmrHrRef.current
+    const p = profileRef.current
+    const da = dailyAllowanceRef.current
+    const pre = summarize(mealsRef.current, bhr, 0, now)
+    const ae = activeEnergyFor(workoutsRef.current, pre.fastStartedAt, p.lastActivityBankDate)
+    const s = summarize(mealsRef.current, bhr, ae, now)
+    const fill = s.caloriesOwed > 0 ? Math.min(1, s.caloriesOwed / da) : 0
+    return { summary: s, activeEnergy: ae, fillFraction: fill }
   }, [])
 
-  const bmrHr = bmrPerHour(profile.sex, profile.age, profile.heightCm, profile.targetWeightKg)
+  const [view, setView] = useState(() => buildView(new Date()))
 
-  // Two-pass: first get fastStartedAt, then compute active energy for that window
-  const preliminary = summarize(meals, bmrHr, 0, now)
-  const activeEnergy = activeEnergyFor(workouts, preliminary.fastStartedAt, profile.lastActivityBankDate)
-  const summary = summarize(meals, bmrHr, activeEnergy, now)
+  // Recompute immediately when data props change (new meal, workout, profile edit)
+  useEffect(() => {
+    setView(buildView(new Date()))
+  }, [meals, workouts, profile, buildView])
 
-  const dailyAllowance = bmrHr * 24
-  const fillFraction = summary.caloriesOwed > 0 ? Math.min(1, summary.caloriesOwed / dailyAllowance) : 0
+  // The dashboard shows minute-resolution values (cal count, next-meal time), so a
+  // once-per-minute tick is plenty — second accuracy would only add repaint flicker.
+  // The guard still bails out of re-renders when nothing visible actually changed.
+  useEffect(() => {
+    const id = setInterval(() => {
+      const next = buildView(new Date())
+      setView(prev => {
+        if (
+          Math.round(prev.summary.caloriesOwed) === Math.round(next.summary.caloriesOwed) &&
+          Math.round(prev.summary.bankBalance) === Math.round(next.summary.bankBalance) &&
+          (prev.summary.bankBalance > 0) === (next.summary.bankBalance > 0) &&
+          Math.round(prev.fillFraction * 200) === Math.round(next.fillFraction * 200) &&
+          Math.floor((prev.summary.projectedFinish?.getTime() ?? 0) / 60000) ===
+            Math.floor((next.summary.projectedFinish?.getTime() ?? 0) / 60000)
+        ) return prev
+        return next
+      })
+    }, 60000)
+    return () => clearInterval(id)
+  }, [buildView])
+
+  const { summary, activeEnergy, fillFraction } = view
 
   function handleLogMealClick() {
     if (summary.bankBalance > 0) {

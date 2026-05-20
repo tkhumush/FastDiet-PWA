@@ -7,7 +7,6 @@ interface Props {
 
 export function WaterFill({ fillFraction, inBank }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const rafRef = useRef<number>(0)
   // Refs let the animation loop read current props without ever restarting
   const fillRef = useRef(fillFraction)
   const inBankRef = useRef(inBank)
@@ -33,7 +32,13 @@ export function WaterFill({ fillFraction, inBank }: Props) {
     ro.observe(canvas)
     resize()
 
+    // Loop ownership is local to this effect instance — StrictMode double-mounts
+    // and HMR swaps can't leave a second loop racing this one and flickering.
+    let raf = 0
+    let cancelled = false
+
     function draw(ts: number) {
+      if (cancelled) return
       const inBank = inBankRef.current
       const fillFraction = fillRef.current
 
@@ -65,13 +70,14 @@ export function WaterFill({ fillFraction, inBank }: Props) {
       wave(amplitude, wavelength, 0, 0.22)
       wave(amplitude * 0.65, wavelength * 0.78, 1.3, 0.15)
 
-      rafRef.current = requestAnimationFrame(draw)
+      raf = requestAnimationFrame(draw)
     }
 
-    rafRef.current = requestAnimationFrame(draw)
+    raf = requestAnimationFrame(draw)
 
     return () => {
-      cancelAnimationFrame(rafRef.current)
+      cancelled = true
+      cancelAnimationFrame(raf)
       ro.disconnect()
     }
   }, []) // Empty — runs once, reads live values from refs
@@ -86,6 +92,11 @@ export function WaterFill({ fillFraction, inBank }: Props) {
         height: '100%',
         pointerEvents: 'none',
         zIndex: 0,
+        // Promote to its own GPU compositing layer so sibling repaints don't flash
+        // the full-screen canvas (classic fixed-position flicker on Safari/iOS).
+        transform: 'translateZ(0)',
+        willChange: 'transform',
+        backfaceVisibility: 'hidden',
       }}
     />
   )
