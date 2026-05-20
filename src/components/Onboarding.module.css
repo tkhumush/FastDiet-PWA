@@ -1,0 +1,91 @@
+.container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+}
+
+h1 {
+  font-size: 1.75rem;
+  font-weight: 300;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.form input {
+  padding: 0.65rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.segmented {
+  display: flex;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.segmented button {
+  flex: 1;
+  padding: 0.6rem;
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.15s, color 0.15s;
+}
+
+.segmented button.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.row {
+  display: flex;
+  gap: 1rem;
+}
+
+.row label {
+  flex: 1;
+}
+
+.note {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+}
+
+.saveBtn {
+  padding: 0.85rem;
+  border-radius: 14px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}

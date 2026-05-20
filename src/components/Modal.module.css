@@ -1,0 +1,181 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+}
+
+.sheet {
+  background: var(--sheet-bg);
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-height: 90dvh;
+  overflow-y: auto;
+  padding: 0.75rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom));
+}
+
+.handle {
+  width: 36px;
+  height: 4px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 2px;
+  margin: 0 auto 1rem;
+}
+
+.title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+}
+
+.section {
+  margin-bottom: 1.5rem;
+}
+
+.label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.calRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.calRow button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calVal {
+  font-size: 2.5rem;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  min-width: 5ch;
+  text-align: center;
+}
+
+.slider {
+  width: 100%;
+  accent-color: var(--accent);
+  margin-bottom: 0.75rem;
+}
+
+.presetRow {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.preset {
+  flex: 1;
+  padding: 0.4rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.presetActive {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.textInput {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.photoButtons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.photoButtons button {
+  flex: 1;
+  padding: 0.65rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.photoPreview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.photoPreview img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.removePhoto {
+  padding: 0.4rem 1rem;
+  border-radius: 8px;
+  background: rgba(239,68,68,0.15);
+  color: #f87171;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  align-self: flex-start;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.cancel {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.save {
+  flex: 2;
+  padding: 0.75rem;
+  border-radius: 12px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}

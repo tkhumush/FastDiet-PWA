@@ -1,0 +1,180 @@
+.container {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 1.25rem;
+  position: relative;
+  z-index: 1;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 0 0;
+}
+
+.appTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.iconBtn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.iconBtn:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.mainNumber {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.bigNum {
+  font-size: clamp(72px, 20vw, 96px);
+  font-weight: 100;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.4s;
+}
+
+.bigLabel {
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.55);
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+}
+
+.nextMealCard {
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 100px;
+  justify-content: center;
+}
+
+.bigTime {
+  font-size: clamp(36px, 12vw, 52px);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.cardMeta {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.55);
+}
+
+.bankMsg {
+  font-size: 1rem;
+  color: hsl(210, 70%, 75%);
+}
+
+.metricRow {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.metricCard {
+  flex: 1;
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.metricVal {
+  font-size: clamp(28px, 10vw, 44px);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.metricLabel {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.55);
+}
+
+.activityBtn {
+  background: none;
+  border: 1px dashed rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.5);
+  border-radius: 10px;
+  padding: 0.5rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+}
+
+.bottomNav {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255,255,255,0.1);
+  position: relative;
+  z-index: 1;
+}
+
+.bottomNav button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.65);
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: 0.25rem 0.75rem;
+}
+
+.bottomNav button:hover {
+  color: #fff;
+}
+
+.logMealBtn {
+  color: #fff !important;
+}
