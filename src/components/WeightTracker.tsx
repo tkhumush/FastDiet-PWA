@@ -3,6 +3,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer,
 } from 'recharts'
 import type { WeightSample, UserProfile, Units } from '../types'
+import { LightningTipModal } from './LightningTipModal'
 import styles from './WeightTracker.module.css'
 
 interface Props {
@@ -32,6 +33,7 @@ function display(kg: number, units: Units): string {
 export function WeightTracker({ weights, profile, onAdd, onDelete, onBack }: Props) {
   const [range, setRange] = useState<Range>('3M')
   const [showLog, setShowLog] = useState(false)
+  const [tipLbsLost, setTipLbsLost] = useState(0)
   const [inputVal, setInputVal] = useState(
     profile.units === 'metric'
       ? (weights[0]?.kg ?? profile.targetWeightKg).toFixed(1)
@@ -59,6 +61,15 @@ export function WeightTracker({ weights, profile, onAdd, onDelete, onBack }: Pro
     const num = +inputVal
     if (isNaN(num) || num <= 0) return
     const kg = profile.units === 'metric' ? num : num / 2.20462
+
+    // Check for weight loss vs most recent entry before saving
+    const previousKg = weights[0]?.kg
+    if (previousKg !== undefined && weights.length >= 1) {
+      const lbsLost = (previousKg - kg) * 2.20462
+      const wholeLbs = Math.floor(lbsLost)
+      if (wholeLbs >= 1) setTipLbsLost(wholeLbs)
+    }
+
     onAdd({ id: crypto.randomUUID(), date: new Date().toISOString(), kg })
     setShowLog(false)
   }
@@ -144,6 +155,13 @@ export function WeightTracker({ weights, profile, onAdd, onDelete, onBack }: Pro
           ))
         )}
       </div>
+
+      {tipLbsLost > 0 && (
+        <LightningTipModal
+          lbsLost={tipLbsLost}
+          onDismiss={() => setTipLbsLost(0)}
+        />
+      )}
 
       {showLog && (
         <div className={styles.logOverlay} onClick={() => setShowLog(false)}>
