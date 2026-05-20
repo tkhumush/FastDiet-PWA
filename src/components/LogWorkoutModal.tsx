@@ -10,8 +10,6 @@ interface Props {
   onCancel: () => void
 }
 
-const DURATION_PRESETS = [15, 20, 30, 45, 60, 90]
-
 export function LogWorkoutModal({ weightKg, onSave, onCancel }: Props) {
   const [selectedType, setSelectedType] = useState(WORKOUT_TYPES[0])
   const [duration, setDuration] = useState(30)
@@ -62,17 +60,6 @@ export function LogWorkoutModal({ weightKg, onSave, onCancel }: Props) {
         {/* Duration */}
         <div className={modalStyles.section}>
           <label className={modalStyles.label}>Duration</label>
-          <div className={styles.durationPresets}>
-            {DURATION_PRESETS.map(d => (
-              <button
-                key={d}
-                className={`${styles.durationBtn} ${duration === d ? styles.durationActive : ''}`}
-                onClick={() => setDuration(d)}
-              >
-                {d}m
-              </button>
-            ))}
-          </div>
           <div className={styles.durationCustom}>
             <input
               type="range"

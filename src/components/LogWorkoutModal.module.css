@@ -37,29 +37,6 @@
   color: rgba(255,255,255,0.85);
 }
 
-.durationPresets {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.durationBtn {
-  padding: 0.35rem 0.8rem;
-  border-radius: 20px;
-  border: 1px solid var(--border);
-  background: var(--card-bg);
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-
-.durationActive {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-
 .durationCustom {
   display: flex;
   align-items: center;
