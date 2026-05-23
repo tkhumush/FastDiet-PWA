@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react'
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer,
-} from 'recharts'
 import type { WeightSample, UserProfile, Units } from '../types'
 import { LightningTipModal } from './LightningTipModal'
-import styles from './WeightTracker.module.css'
+import { Chip } from './shared/Chip'
+import { Slider } from './shared/Slider'
+import { ScrubberCard } from './shared/ScrubberCard'
+import { Eyebrow } from './shared/Eyebrow'
 
 interface Props {
   weights: WeightSample[]
@@ -13,6 +13,17 @@ interface Props {
   onDelete: (id: string) => void
   onResetMelt: () => void
   onBack: () => void
+  saveProfile?: (profile: UserProfile) => void
+}
+
+const TK = {
+  bg: 'radial-gradient(120% 60% at 50% -10%, rgba(76,217,210,0.20), rgba(76,217,210,0.03) 38%, transparent 65%), radial-gradient(120% 60% at 50% 110%, rgba(240,138,110,0.10), transparent 60%), #07111A',
+  text: '#F4F8F8',
+  muted: 'rgba(244,248,248,0.55)',
+  dim: 'rgba(244,248,248,0.32)',
+  hairline: 'rgba(255,255,255,0.07)',
+  teal: '#4CD9D2',
+  coral: '#F08A6E',
 }
 
 type Range = '1M' | '3M' | '6M' | '1Y' | 'All'
@@ -26,172 +37,558 @@ function cutoffDate(range: Range): Date | null {
   return null
 }
 
-function display(kg: number, units: Units): string {
+function displayWeight(kg: number, units: Units): string {
   if (units === 'metric') return `${kg.toFixed(1)} kg`
   return `${(kg * 2.20462).toFixed(1)} lb`
 }
 
-export function WeightTracker({ weights, profile, onAdd, onDelete, onResetMelt, onBack }: Props) {
-  const [range, setRange] = useState<Range>('3M')
-  const [showLog, setShowLog] = useState(false)
-  const [tipLbsLost, setTipLbsLost] = useState(0)
-  const [inputVal, setInputVal] = useState(
-    profile.units === 'metric'
-      ? (weights[0]?.kg ?? profile.targetWeightKg).toFixed(1)
-      : ((weights[0]?.kg ?? profile.targetWeightKg) * 2.20462).toFixed(1)
-  )
+interface ChartPoint {
+  v: number
+  date: Date
+  label: string
+}
 
-  const sorted = [...weights].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+function MiniChart({ data, target, height = 150 }: { data: ChartPoint[]; target: number; height?: number }) {
+  if (data.length < 2) {
+    return (
+      <div
+        style={{
+          height: height + 30,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: TK.dim,
+          fontSize: 13,
+        }}
+      >
+        Log a few readings to see your trend.
+      </div>
+    )
+  }
+  const w = 354
+  const values = data.map(d => d.v).concat([target])
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  const pad = (max - min) * 0.15 || 2
+  const range = (max - min) + pad * 2
+  const xStep = w / (data.length - 1)
+  const toY = (v: number) => height - ((v - min + pad) / range) * height
+  const linePath = data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${i * xStep} ${toY(d.v)}`).join(' ')
+  const areaPath = linePath + ` L ${(data.length - 1) * xStep} ${height} L 0 ${height} Z`
+  const targetY = toY(target)
+  const lastX = (data.length - 1) * xStep
+  const lastY = toY(data[data.length - 1].v)
+
+  return (
+    <svg
+      viewBox={`0 0 ${w} ${height + 30}`}
+      width="100%"
+      height={height + 30}
+      preserveAspectRatio="none"
+      style={{ display: 'block' }}
+    >
+      <defs>
+        <linearGradient id="wf-chart-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#4CD9D2" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#4CD9D2" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id="wf-chart-line" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#1E9B97" />
+          <stop offset="60%" stopColor="#4CD9D2" />
+          <stop offset="100%" stopColor="#7BEAE3" />
+        </linearGradient>
+      </defs>
+      <line
+        x1={0}
+        y1={targetY}
+        x2={w}
+        y2={targetY}
+        stroke="rgba(255,255,255,0.18)"
+        strokeDasharray="4 4"
+        strokeWidth={1}
+      />
+      <text
+        x={w - 4}
+        y={targetY - 6}
+        textAnchor="end"
+        fill="rgba(244,248,248,0.4)"
+        fontSize={10}
+        fontWeight={600}
+        letterSpacing="0.04em"
+      >
+        GOAL {target.toFixed(1)}
+      </text>
+      <path d={areaPath} fill="url(#wf-chart-fill)" />
+      <path
+        d={linePath}
+        fill="none"
+        stroke="url(#wf-chart-line)"
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{ filter: 'drop-shadow(0 0 8px rgba(76,217,210,0.55))' }}
+      />
+      <circle cx={lastX} cy={lastY} r={9} fill="rgba(76,217,210,0.18)" />
+      <circle
+        cx={lastX}
+        cy={lastY}
+        r={4.5}
+        fill="#FFFFFF"
+        style={{ filter: 'drop-shadow(0 0 6px rgba(76,217,210,0.8))' }}
+      />
+      <text x={0} y={height + 22} fill="rgba(244,248,248,0.32)" fontSize={9.5}>
+        {data[0]?.label}
+      </text>
+      <text x={w} y={height + 22} textAnchor="end" fill="rgba(244,248,248,0.32)" fontSize={9.5}>
+        {data[data.length - 1]?.label}
+      </text>
+    </svg>
+  )
+}
+
+type ActiveChip = 'current' | 'target' | null
+
+export function WeightTracker({ weights, profile, onAdd, onDelete: _onDelete, onResetMelt, onBack, saveProfile }: Props) {
+  const [range, setRange] = useState<Range>('3M')
+  const [active, setActive] = useState<ActiveChip>(null)
+  const [pendingKg, setPendingKg] = useState<number | null>(null)
+  const [pendingTargetKg, setPendingTargetKg] = useState<number | null>(null)
+  const [confirmReset, setConfirmReset] = useState(false)
+  const [tipLbsLost, setTipLbsLost] = useState(0)
+
+  // Weights are stored newest-first in the array
+  const sortedAsc = [...weights].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  const latestKg = weights[0]?.kg ?? profile.targetWeightKg
 
   const filtered = useMemo(() => {
     const cut = cutoffDate(range)
-    return cut ? sorted.filter(s => new Date(s.date) >= cut) : sorted
-  }, [sorted, range])
+    return cut ? sortedAsc.filter(s => new Date(s.date) >= cut) : sortedAsc
+  }, [sortedAsc, range])
 
-  const chartData = filtered.map(s => ({
-    date: new Date(s.date).toLocaleDateString([], { month: 'short', day: 'numeric' }),
-    value: profile.units === 'metric' ? +s.kg.toFixed(1) : +(s.kg * 2.20462).toFixed(1),
-  }))
+  const chartData: ChartPoint[] = filtered.map(s => {
+    const d = new Date(s.date)
+    return {
+      v: profile.units === 'metric' ? +s.kg.toFixed(1) : +(s.kg * 2.20462).toFixed(1),
+      date: d,
+      label: d.toLocaleDateString([], { month: 'short', day: 'numeric' }),
+    }
+  })
 
-  const targetDisplay = display(profile.targetWeightKg, profile.units)
   const targetChartVal = profile.units === 'metric'
     ? profile.targetWeightKg
     : profile.targetWeightKg * 2.20462
 
-  function saveWeight() {
-    const num = +inputVal
-    if (isNaN(num) || num <= 0) return
-    const kg = profile.units === 'metric' ? num : num / 2.20462
+  // Effective values for sentence chips
+  const currentKgDisplay = active === 'current' ? (pendingKg ?? latestKg) : latestKg
+  const targetKgDisplay = active === 'target' ? (pendingTargetKg ?? profile.targetWeightKg) : profile.targetWeightKg
+  const toGoKg = Math.max(0, currentKgDisplay - targetKgDisplay)
 
-    // Check for weight loss vs most recent entry before saving
+  function openCurrent() { setPendingKg(latestKg); setActive('current') }
+  function openTarget() { setPendingTargetKg(profile.targetWeightKg); setActive('target') }
+  function closeAll() { setActive(null); setPendingKg(null); setPendingTargetKg(null) }
+
+  function logReading() {
+    const kg = +((pendingKg ?? latestKg)).toFixed(1)
+    // Check for weight loss vs most recent entry
     const previousKg = weights[0]?.kg
     if (previousKg !== undefined && weights.length >= 1) {
       const lbsLost = (previousKg - kg) * 2.20462
       const wholeLbs = Math.floor(lbsLost)
       if (wholeLbs >= 1) setTipLbsLost(wholeLbs)
     }
-
     onAdd({ id: crypto.randomUUID(), date: new Date().toISOString(), kg })
-    setShowLog(false)
+    closeAll()
   }
 
-  const lbsMelted = profile.cumulativeBankedCalories / 3500
+  function saveTarget() {
+    if (!saveProfile) {
+      closeAll()
+      return
+    }
+    saveProfile({ ...profile, targetWeightKg: pendingTargetKg ?? profile.targetWeightKg })
+    closeAll()
+  }
+
+  const meltedLbs = profile.cumulativeBankedCalories / 3500
+
+  let scrubber: React.ReactNode = null
+  if (active === 'current') {
+    scrubber = (
+      <ScrubberCard
+        label="Log new reading"
+        displayValue={displayWeight(currentKgDisplay, profile.units)}
+        visible
+        onClose={closeAll}
+        primary={{ label: 'Log reading', onClick: logReading }}
+      >
+        <Slider
+          value={currentKgDisplay}
+          min={30}
+          max={200}
+          step={0.1}
+          onChange={n => setPendingKg(+n.toFixed(1))}
+          showRange
+        />
+        <p
+          style={{
+            margin: '12px 0 0',
+            fontSize: 11.5,
+            color: TK.dim,
+            lineHeight: 1.5,
+            textAlign: 'center',
+          }}
+        >
+          A new entry will be added to your history.
+        </p>
+      </ScrubberCard>
+    )
+  } else if (active === 'target') {
+    scrubber = (
+      <ScrubberCard
+        label="Target weight"
+        displayValue={displayWeight(targetKgDisplay, profile.units)}
+        visible
+        onClose={closeAll}
+        primary={{ label: 'Save goal', onClick: saveTarget }}
+      >
+        <Slider
+          value={targetKgDisplay}
+          min={30}
+          max={200}
+          step={0.5}
+          onChange={n => setPendingTargetKg(n)}
+          showRange
+        />
+      </ScrubberCard>
+    )
+  }
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <button className={styles.back} onClick={onBack}>‹ Back</button>
-        <h1>Weight</h1>
-        <button className={styles.addBtn} onClick={() => setShowLog(true)}>+ Log</button>
-      </header>
-
-      {profile.cumulativeBankedCalories > 0 && (
-        <div className={styles.meltCard}>
-          <span className={styles.meltIcon}>💧</span>
-          <div className={styles.meltText}>
-            <p className={styles.meltTitle}>{lbsMelted.toFixed(2)} lbs melted away</p>
-            <p className={styles.meltSub}>From converted calorie surplus</p>
-          </div>
-          <button
-            className={styles.meltReset}
-            onClick={() => {
-              if (confirm('Reset your melt total back to zero?')) onResetMelt()
+    <div
+      style={{
+        width: '100%',
+        minHeight: '100dvh',
+        background: TK.bg,
+        color: TK.text,
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      <div style={{ minHeight: '100dvh', overflow: 'auto' }}>
+        <div
+          style={{
+            minHeight: '100dvh',
+            paddingTop: 60,
+            paddingBottom: scrubber ? 280 : 60,
+            paddingLeft: 24,
+            paddingRight: 24,
+            boxSizing: 'border-box',
+          }}
+        >
+          {/* Top bar */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 18,
+              gap: 8,
             }}
           >
-            Reset
-          </button>
-        </div>
-      )}
+            <button
+              onClick={onBack}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: TK.muted,
+                fontSize: 15,
+                fontWeight: 500,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                padding: 0,
+              }}
+            >
+              ‹ Dashboard
+            </button>
+            <Eyebrow color={TK.muted} size={11}>Weight</Eyebrow>
+            <button
+              onClick={openCurrent}
+              style={{
+                background: 'rgba(76,217,210,0.10)',
+                border: '1px solid rgba(76,217,210,0.35)',
+                color: TK.teal,
+                fontSize: 12.5,
+                fontWeight: 700,
+                padding: '6px 12px',
+                borderRadius: 999,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                letterSpacing: '0.02em',
+              }}
+            >
+              + Log
+            </button>
+          </div>
 
-      {chartData.length > 0 && (
-        <div className={styles.chartSection}>
-          <div className={styles.rangeRow}>
+          {/* Sentence */}
+          <div style={{ marginBottom: 22 }}>
+            <Eyebrow size={11}>You're at</Eyebrow>
+            <div
+              style={{
+                marginTop: 10,
+                fontSize: 24,
+                fontWeight: 500,
+                lineHeight: 1.55,
+                letterSpacing: '-0.012em',
+                color: TK.muted,
+              }}
+            >
+              <Chip active={active === 'current'} onClick={openCurrent}>
+                {displayWeight(currentKgDisplay, profile.units)}
+              </Chip>
+              &nbsp;today,
+              {toGoKg > 0 ? (
+                <>
+                  {' '}still{' '}
+                  <span style={{ color: TK.text, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+                    {displayWeight(toGoKg, profile.units)}
+                  </span>{' '}
+                  from
+                </>
+              ) : (
+                <> already at</>
+              )}
+              &nbsp;your goal of&nbsp;
+              <Chip active={active === 'target'} onClick={openTarget}>
+                {displayWeight(targetKgDisplay, profile.units)}
+              </Chip>
+              .
+            </div>
+          </div>
+
+          {/* Range pills */}
+          <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
             {(['1M', '3M', '6M', '1Y', 'All'] as Range[]).map(r => (
-              <button key={r} className={`${styles.rangeBtn} ${range === r ? styles.rangeActive : ''}`} onClick={() => setRange(r)}>
+              <button
+                key={r}
+                onClick={() => setRange(r)}
+                style={{
+                  flex: 1,
+                  padding: '7px 0',
+                  borderRadius: 8,
+                  background: range === r ? 'rgba(76,217,210,0.15)' : 'transparent',
+                  border: `1px solid ${range === r ? 'rgba(76,217,210,0.4)' : TK.hairline}`,
+                  color: range === r ? TK.teal : TK.muted,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: '0.05em',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
                 {r}
               </button>
             ))}
           </div>
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-              <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }} />
-              <YAxis tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }} domain={['auto', 'auto']} />
-              <Tooltip
-                contentStyle={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: 8 }}
-                labelStyle={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}
-                itemStyle={{ color: '#fff' }}
-              />
-              <ReferenceLine y={targetChartVal} stroke="rgba(255,255,255,0.3)" strokeDasharray="5 3"
-                label={{ value: `Goal ${targetDisplay}`, fill: 'rgba(255,255,255,0.4)', fontSize: 10, position: 'insideTopLeft' }} />
-              <Line
-                type="monotone"
-                dataKey="value"
-                stroke="#60a5fa"
-                strokeWidth={2.5}
-                dot={chartData.length <= 10 ? { r: 4, fill: '#60a5fa', strokeWidth: 0 } : false}
-                activeDot={{ r: 5, fill: '#93c5fd', strokeWidth: 0 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+
+          {/* Chart */}
+          <div
+            style={{
+              padding: '14px 8px 8px',
+              borderRadius: 16,
+              background: 'rgba(255,255,255,0.025)',
+              border: `1px solid ${TK.hairline}`,
+              marginBottom: 18,
+            }}
+          >
+            <MiniChart data={chartData} target={targetChartVal} height={150} />
+          </div>
+
+          {/* Melted card */}
+          {meltedLbs > 0 && (
+            <div
+              style={{
+                padding: '14px 16px',
+                borderRadius: 14,
+                background: 'linear-gradient(135deg, rgba(76,217,210,0.10), rgba(240,138,110,0.06))',
+                border: '1px solid rgba(76,217,210,0.22)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                marginBottom: 18,
+              }}
+            >
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 12,
+                  background: 'linear-gradient(135deg, #4CD9D2, #1E9B97)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 18,
+                  boxShadow: '0 4px 14px rgba(76,217,210,0.35)',
+                  flexShrink: 0,
+                }}
+              >
+                💧
+              </div>
+              <div
+                style={{
+                  fontSize: 14,
+                  lineHeight: 1.55,
+                  color: TK.muted,
+                  flex: 1,
+                  minWidth: 0,
+                }}
+              >
+                <span
+                  style={{
+                    color: TK.text,
+                    fontWeight: 700,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {meltedLbs.toFixed(2)} lbs
+                </span>
+                &nbsp;melted from converted surplus.
+              </div>
+              {confirmReset ? (
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                  <button
+                    onClick={() => setConfirmReset(false)}
+                    style={{
+                      padding: '6px 10px',
+                      borderRadius: 8,
+                      background: 'rgba(255,255,255,0.06)',
+                      border: `1px solid ${TK.hairline}`,
+                      color: TK.muted,
+                      fontSize: 11.5,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => { onResetMelt(); setConfirmReset(false) }}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: 8,
+                      background: 'rgba(240,138,110,0.15)',
+                      border: '1px solid rgba(240,138,110,0.45)',
+                      color: TK.coral,
+                      fontSize: 11.5,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    Reset
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmReset(true)}
+                  aria-label="Reset melted total"
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: 8,
+                    background: 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${TK.hairline}`,
+                    color: TK.muted,
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    flexShrink: 0,
+                  }}
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* History */}
+          <div>
+            <Eyebrow color={TK.muted} size={11}>History</Eyebrow>
+            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column' }}>
+              {weights.length === 0 ? (
+                <div
+                  style={{
+                    padding: '40px 20px',
+                    textAlign: 'center',
+                    color: TK.dim,
+                    border: `1px dashed ${TK.hairline}`,
+                    borderRadius: 16,
+                    marginTop: 10,
+                  }}
+                >
+                  No weight readings yet. Tap + Log to start.
+                </div>
+              ) : (
+                weights.slice(0, 6).map((p, i, arr) => {
+                  const ms = Date.now() - new Date(p.date).getTime()
+                  const days = Math.floor(ms / 86_400_000)
+                  const when =
+                    days < 1 ? 'Today' :
+                    days === 1 ? 'Yesterday' :
+                    new Date(p.date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
+                  return (
+                    <div
+                      key={p.id}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'baseline',
+                        padding: '12px 4px',
+                        borderBottom: i < arr.length - 1 ? `1px solid ${TK.hairline}` : 'none',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 17,
+                          color: TK.text,
+                          fontWeight: 600,
+                          fontVariantNumeric: 'tabular-nums',
+                        }}
+                      >
+                        {displayWeight(p.kg, profile.units)}
+                      </span>
+                      <span style={{ fontSize: 12, color: TK.dim }}>{when}</span>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {scrubber && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 50,
+            left: 24,
+            right: 24,
+            maxWidth: 432,
+            margin: '0 auto',
+            zIndex: 10,
+          }}
+        >
+          {scrubber}
         </div>
       )}
-
-      <div className={styles.history}>
-        <p className={styles.historyLabel}>History</p>
-        {weights.length === 0 ? (
-          <div className={styles.empty}>
-            <p>⚖️</p>
-            <p>No weight readings yet. Tap + Log to start.</p>
-          </div>
-        ) : (
-          weights.map(s => (
-            <div key={s.id} className={styles.weightRow}>
-              <div className={styles.weightInfo}>
-                <span className={styles.weightVal}>{display(s.kg, profile.units)}</span>
-                <span className={styles.weightDate}>
-                  {new Date(s.date).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                </span>
-              </div>
-              <button
-                className={styles.weightDelete}
-                onClick={() => { if (confirm('Delete this reading?')) onDelete(s.id) }}
-                aria-label="Delete"
-              >
-                🗑
-              </button>
-            </div>
-          ))
-        )}
-      </div>
 
       {tipLbsLost > 0 && (
         <LightningTipModal
           lbsLost={tipLbsLost}
           onDismiss={() => setTipLbsLost(0)}
         />
-      )}
-
-      {showLog && (
-        <div className={styles.logOverlay} onClick={() => setShowLog(false)}>
-          <div className={styles.logSheet} onClick={e => e.stopPropagation()}>
-            <div className={styles.logHandle} />
-            <h2>Log weight</h2>
-            <label className={styles.logLabel}>Weight ({profile.units === 'metric' ? 'kg' : 'lbs'})</label>
-            <input
-              type="number"
-              step={0.1}
-              value={inputVal}
-              onChange={e => setInputVal(e.target.value)}
-              className={styles.logInput}
-              autoFocus
-            />
-            <div className={styles.logActions}>
-              <button className={styles.logCancel} onClick={() => setShowLog(false)}>Cancel</button>
-              <button className={styles.logSave} onClick={saveWeight}>Save</button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   )

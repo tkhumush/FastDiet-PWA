@@ -5,7 +5,7 @@ import { WaterFill } from './WaterFill'
 import { LogMealModal } from './LogMealModal'
 import { LogWorkoutModal } from './LogWorkoutModal'
 import { BankChoiceModal } from './BankChoiceModal'
-import styles from './Dashboard.module.css'
+import { Eyebrow } from './shared/Eyebrow'
 
 interface Props {
   profile: UserProfile
@@ -20,6 +20,14 @@ interface Props {
   onNavigateProfile: () => void
 }
 
+const TK = {
+  bg: 'radial-gradient(120% 60% at 50% -10%, rgba(76,217,210,0.20), rgba(76,217,210,0.03) 38%, transparent 65%), radial-gradient(120% 60% at 50% 110%, rgba(240,138,110,0.10), transparent 60%), #07111A',
+  text: '#F4F8F8',
+  muted: 'rgba(244,248,248,0.55)',
+  hairline: 'rgba(255,255,255,0.07)',
+  teal: '#4CD9D2',
+}
+
 function formatTime(date: Date): string {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
@@ -30,11 +38,35 @@ function formatRelative(date: Date): string {
   const totalMin = Math.floor(diff / 60000)
   const h = Math.floor(totalMin / 60)
   const m = totalMin % 60
-  if (h === 0) return `in ${m}m`
-  if (m === 0) return `in ${h}h`
-  return `in ${h}h ${m}m`
+  if (h === 0) return `${m}m`
+  if (m === 0) return `${h}h`
+  return `${h}h ${m}m`
 }
 
+function NavBtn({ label, icon, onClick }: { label: string; icon: React.ReactNode; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 4,
+        background: 'none',
+        border: 'none',
+        color: TK.muted,
+        cursor: 'pointer',
+        fontSize: 11,
+        fontWeight: 500,
+        padding: '6px 10px',
+        fontFamily: 'inherit',
+      }}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
+  )
+}
 
 export function Dashboard({
   profile, meals, workouts, latestWeightKg,
@@ -74,14 +106,10 @@ export function Dashboard({
 
   const [view, setView] = useState(() => buildView(new Date()))
 
-  // Recompute immediately when data props change (new meal, workout, profile edit)
   useEffect(() => {
     setView(buildView(new Date()))
   }, [meals, workouts, profile, buildView])
 
-  // The dashboard shows minute-resolution values (cal count, next-meal time), so a
-  // once-per-minute tick is plenty — second accuracy would only add repaint flicker.
-  // The guard still bails out of re-renders when nothing visible actually changed.
   useEffect(() => {
     const id = setInterval(() => {
       const next = buildView(new Date())
@@ -100,7 +128,7 @@ export function Dashboard({
     return () => clearInterval(id)
   }, [buildView])
 
-  const { summary, activeEnergy, fillFraction } = view
+  const { summary, fillFraction } = view
 
   function handleLogMealClick() {
     if (summary.bankBalance > 0) {
@@ -110,104 +138,259 @@ export function Dashboard({
     }
   }
 
+  const isBanked = summary.bankBalance > 0
+  const eyebrowLabel = isBanked ? 'Calories ahead' : 'You owe'
+  const heroNumber = isBanked
+    ? `−${Math.round(summary.bankBalance)}`
+    : Math.round(summary.caloriesOwed)
+  const initial = (profile.name || '?').trim().charAt(0).toUpperCase() || '?'
+
+  let sentenceRow: React.ReactNode = null
+  if (isBanked) {
+    sentenceRow = (
+      <div
+        style={{
+          marginTop: 18,
+          fontSize: 18,
+          fontWeight: 500,
+          lineHeight: 1.65,
+          letterSpacing: '-0.005em',
+          color: TK.muted,
+        }}
+      >
+        You've burned more than you ate — fat is converting. Eat when you're hungry.
+      </div>
+    )
+  } else if (summary.projectedFinish && summary.caloriesOwed > 0) {
+    sentenceRow = (
+      <div
+        style={{
+          marginTop: 18,
+          fontSize: 18,
+          fontWeight: 500,
+          lineHeight: 1.65,
+          letterSpacing: '-0.005em',
+          color: TK.muted,
+        }}
+      >
+        Next meal at{' '}
+        <span
+          style={{
+            color: TK.text,
+            fontWeight: 700,
+            fontVariantNumeric: 'tabular-nums',
+            padding: '2px 10px',
+            borderRadius: 10,
+            background: 'rgba(76,217,210,0.10)',
+            boxShadow: 'inset 0 0 0 1px rgba(76,217,210,0.30)',
+          }}
+        >
+          {formatTime(summary.projectedFinish)}
+        </span>
+        {' '}— that's in{' '}
+        <span style={{ color: TK.text, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+          {formatRelative(summary.projectedFinish)}
+        </span>.
+        Burning{' '}
+        <span style={{ color: TK.text, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+          {Math.round(bmrHr)}
+        </span>
+        {' '}cal/hr.
+      </div>
+    )
+  } else {
+    sentenceRow = (
+      <div
+        style={{
+          marginTop: 18,
+          fontSize: 18,
+          fontWeight: 500,
+          lineHeight: 1.65,
+          letterSpacing: '-0.005em',
+          color: TK.muted,
+        }}
+      >
+        Log a meal to start your timer.
+      </div>
+    )
+  }
+
   return (
-    <div className={styles.container}>
-      <WaterFill fillFraction={fillFraction} inBank={summary.bankBalance > 0} />
+    <div
+      style={{
+        width: '100%',
+        minHeight: '100dvh',
+        background: TK.bg,
+        color: TK.text,
+        position: 'relative',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <WaterFill fillFraction={fillFraction} inBank={isBanked} />
 
-      <div className={styles.content}>
-        <header className={styles.header}>
-          <button className={styles.iconBtn} onClick={onNavigateProfile} aria-label="Profile">
-            <svg viewBox="0 0 24 24" fill="currentColor" width={24} height={24}>
-              <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
-            </svg>
-          </button>
-          <span className={styles.appTitle}>FastDiet</span>
-          <div style={{ width: 40 }} />
-        </header>
-
-        <div className={styles.mainNumber}>
-          {summary.bankBalance > 0 ? (
-            <>
-              <span className={styles.bigNum} style={{ color: 'hsl(210, 80%, 70%)' }}>
-                −{Math.round(summary.bankBalance)}
-              </span>
-              <span className={styles.bigLabel}>cal banked</span>
-            </>
-          ) : (
-            <>
-              <span className={styles.bigNum}>{Math.round(summary.caloriesOwed)}</span>
-              <span className={styles.bigLabel}>
-                {summary.caloriesOwed > 0 ? 'cal to burn' : 'No active fast'}
-              </span>
-            </>
-          )}
-        </div>
-
-        <div className={styles.cards}>
-          <div className={styles.nextMealCard}>
-            {summary.projectedFinish && summary.caloriesOwed > 0 ? (
-              <>
-                <span className={styles.cardMeta}>Next meal at</span>
-                <span className={styles.bigTime}>{formatTime(summary.projectedFinish)}</span>
-                <span className={styles.cardMeta}>{formatRelative(summary.projectedFinish)}</span>
-              </>
-            ) : summary.bankBalance > 0 ? (
-              <span className={styles.bankMsg}>Surplus — eat when ready</span>
-            ) : (
-              <span className={styles.cardMeta}>Log a meal to start your timer</span>
-            )}
+      <div style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
+        <div
+          style={{
+            flex: 1,
+            paddingTop: 56,
+            paddingLeft: 24,
+            paddingRight: 24,
+            paddingBottom: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            boxSizing: 'border-box',
+          }}
+        >
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <button
+              onClick={onNavigateProfile}
+              aria-label="Profile"
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 999,
+                background: 'rgba(255,255,255,0.06)',
+                border: `1px solid ${TK.hairline}`,
+                color: TK.text,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 15,
+                fontWeight: 600,
+                fontFamily: 'inherit',
+              }}
+            >
+              {initial}
+            </button>
+            <Eyebrow size={11}>FastDiet</Eyebrow>
+            <div style={{ width: 40 }} />
           </div>
 
-          <div className={styles.metricRow}>
-            <div className={styles.metricCard}>
-              <span className={styles.metricVal}>{Math.round(bmrHr)}</span>
-              <span className={styles.metricLabel}>cal/hr burn</span>
+          {/* Hero */}
+          <div
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              gap: 8,
+              padding: '8px 0',
+            }}
+          >
+            <Eyebrow size={11}>{eyebrowLabel}</Eyebrow>
+            <div style={{ position: 'relative' }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: '-20% -10%',
+                  background: 'radial-gradient(50% 55% at 50% 50%, rgba(76,217,210,0.30), transparent 70%)',
+                  filter: 'blur(20px)',
+                  zIndex: 0,
+                }}
+              />
+              <span
+                style={{
+                  position: 'relative',
+                  zIndex: 1,
+                  fontSize: 120,
+                  fontWeight: 200,
+                  letterSpacing: '-0.055em',
+                  fontVariantNumeric: 'tabular-nums',
+                  lineHeight: 1,
+                  background: 'linear-gradient(180deg, #FFFFFF 0%, #7BEAE3 75%, #4CD9D2 110%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}
+              >
+                {heroNumber}
+              </span>
+              <span
+                style={{
+                  position: 'relative',
+                  zIndex: 1,
+                  marginLeft: 8,
+                  fontSize: 17,
+                  color: TK.muted,
+                  fontWeight: 500,
+                  letterSpacing: '0.02em',
+                }}
+              >
+                cal
+              </span>
             </div>
-            <div className={styles.metricCard}>
-              {activeEnergy > 0 ? (
-                <>
-                  <span className={styles.metricVal} style={{ color: '#f97316' }}>
-                    {Math.round(activeEnergy)}
-                  </span>
-                  <span className={styles.metricLabel}>cal activity</span>
-                </>
-              ) : (
-                <>
-                  <span className={styles.metricVal} style={{ color: 'rgba(255,255,255,0.25)' }}>—</span>
-                  <span className={styles.metricLabel}>no activity yet</span>
-                </>
-              )}
-            </div>
+            {sentenceRow}
+          </div>
+
+          {/* Bottom nav */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 4px 50px',
+              gap: 8,
+            }}
+          >
+            <NavBtn
+              label="Log"
+              onClick={onNavigateLog}
+              icon={
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={22} height={22}>
+                  <path strokeLinecap="round" d="M4 6h16M4 10h16M4 14h10" />
+                </svg>
+              }
+            />
+            <NavBtn
+              label="Workout"
+              onClick={() => setShowWorkoutModal(true)}
+              icon={
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={22} height={22}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              }
+            />
+            <button
+              onClick={handleLogMealClick}
+              style={{
+                border: 'none',
+                cursor: 'pointer',
+                background: 'linear-gradient(120deg, #1E9B97 0%, #4CD9D2 60%, #7BEAE3 105%)',
+                backgroundSize: '180% 180%',
+                animation: 'fd-shimmer 6s ease-in-out infinite alternate',
+                padding: '12px 22px',
+                borderRadius: 999,
+                color: '#062028',
+                fontWeight: 700,
+                fontSize: 15,
+                fontFamily: 'inherit',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                boxShadow: '0 10px 28px rgba(76,217,210,0.40), inset 0 1px 0 rgba(255,255,255,0.4)',
+              }}
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" width={20} height={20}>
+                <path d="M12 4v16m-8-8h16" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" />
+              </svg>
+              Log meal
+            </button>
+            <NavBtn
+              label="Weight"
+              onClick={onNavigateWeight}
+              icon={
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={22} height={22}>
+                  <path strokeLinecap="round" d="M3 17l4-8 4 4 4-6 4 10" />
+                </svg>
+              }
+            />
           </div>
         </div>
       </div>
-
-      <nav className={styles.bottomNav}>
-        <button onClick={onNavigateLog}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={22} height={22}>
-            <path strokeLinecap="round" d="M4 6h16M4 10h16M4 14h10"/>
-          </svg>
-          <span>Log</span>
-        </button>
-        <button onClick={() => setShowWorkoutModal(true)}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={22} height={22}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-          </svg>
-          <span>Workout</span>
-        </button>
-        <button className={styles.logMealBtn} onClick={handleLogMealClick}>
-          <svg viewBox="0 0 24 24" fill="currentColor" width={28} height={28}>
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
-          </svg>
-          <span>Log meal</span>
-        </button>
-        <button onClick={onNavigateWeight}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={22} height={22}>
-            <path strokeLinecap="round" d="M3 17l4-8 4 4 4-6 4 10"/>
-          </svg>
-          <span>Weight</span>
-        </button>
-      </nav>
 
       {showBankChoice && (
         <BankChoiceModal
@@ -220,15 +403,8 @@ export function Dashboard({
 
       {showMealModal && (
         <LogMealModal
-          onSave={(calories, name, photoDataUrl) => {
-            onAddMeal({
-              id: crypto.randomUUID(),
-              calories,
-              loggedAt: new Date().toISOString(),
-              name,
-              kind: 'meal',
-              photoDataUrl,
-            })
+          onSave={meal => {
+            onAddMeal(meal)
             setShowMealModal(false)
           }}
           onCancel={() => setShowMealModal(false)}

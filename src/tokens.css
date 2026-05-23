@@ -1,0 +1,60 @@
+/* FastDiet redesign — design tokens + keyframes
+ * Port of the TK object from design_handoff/onboarding-shared.jsx
+ */
+
+:root {
+  /* Backdrop — cool dark, teal halo at top, soft coral hint at bottom */
+  --fd-bg: radial-gradient(120% 60% at 50% -10%, rgba(76,217,210,0.20), rgba(76,217,210,0.03) 38%, transparent 65%),
+           radial-gradient(120% 60% at 50% 110%, rgba(240,138,110,0.10), transparent 60%),
+           #07111A;
+  --fd-bg-plain: #07111A;
+
+  /* Text */
+  --fd-text: #F4F8F8;
+  --fd-muted: rgba(244,248,248,0.55);
+  --fd-dim: rgba(244,248,248,0.32);
+
+  /* Surfaces */
+  --fd-hairline: rgba(255,255,255,0.07);
+  --fd-surface: rgba(255,255,255,0.035);
+  --fd-surface-hi: rgba(255,255,255,0.06);
+
+  /* Brand */
+  --fd-teal: #4CD9D2;
+  --fd-teal-deep: #1E9B97;
+  --fd-teal-hi: #7BEAE3;
+  --fd-coral: #F08A6E;
+  --fd-glow-teal: 0 0 28px rgba(76,217,210,0.45);
+
+  /* Gradients */
+  --fd-cta-gradient: linear-gradient(118deg, #1E9B97 0%, #4CD9D2 60%, #7BEAE3 105%);
+  --fd-cta-gradient-warm: linear-gradient(118deg, #1E9B97 0%, #4CD9D2 45%, #7BEAE3 75%, #F08A6E 130%);
+  --fd-slider-fill: linear-gradient(90deg, #1E9B97 0%, #4CD9D2 65%, #7BEAE3 100%);
+  --fd-chip-active: linear-gradient(180deg, rgba(76,217,210,0.26), rgba(30,155,151,0.16));
+  --fd-hero-text: linear-gradient(180deg, #FFFFFF 0%, #7BEAE3 75%, #4CD9D2 110%);
+
+  /* Font */
+  --fd-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro", system-ui, sans-serif;
+}
+
+/* Keyframes ───────────────────────────────────────────────────────── */
+@keyframes fd-thumb {
+  0%, 100% { box-shadow: 0 0 0 5px rgba(76,217,210,0.18), 0 4px 14px rgba(0,0,0,0.55); }
+  50%      { box-shadow: 0 0 0 9px rgba(76,217,210,0.08), 0 4px 14px rgba(0,0,0,0.55); }
+}
+@keyframes fd-shimmer {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+@keyframes fd-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+@keyframes fd-caret {
+  0%, 50%   { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+@keyframes fd-dot {
+  0%, 100% { transform: scale(1);   opacity: 0.9; }
+  50%      { transform: scale(1.3); opacity: 1; }
+}

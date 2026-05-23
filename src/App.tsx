@@ -82,6 +82,7 @@ export default function App() {
         onDelete={removeWeight}
         onResetMelt={handleResetMelt}
         onBack={() => setScreen('dashboard')}
+        saveProfile={saveProfile}
       />
     )
   }
