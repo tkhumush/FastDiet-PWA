@@ -34,10 +34,12 @@ export function summarize(
   meals: MealEntry[],
   bmrPerHr: number,
   activeEnergy = 0,
-  now = new Date()
+  now = new Date(),
+  bankCursor: Date | null = null
 ): FastSummary {
   const sorted = meals
     .filter(m => m.kind !== 'activityBank')
+    .filter(m => !bankCursor || new Date(m.loggedAt) >= bankCursor)
     .slice()
     .sort((a, b) => new Date(a.loggedAt).getTime() - new Date(b.loggedAt).getTime())
 

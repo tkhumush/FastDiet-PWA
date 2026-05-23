@@ -64,9 +64,10 @@ export function Dashboard({
     const bhr = bmrHrRef.current
     const p = profileRef.current
     const da = dailyAllowanceRef.current
-    const pre = summarize(mealsRef.current, bhr, 0, now)
+    const bankCursor = p.lastActivityBankDate ? new Date(p.lastActivityBankDate) : null
+    const pre = summarize(mealsRef.current, bhr, 0, now, bankCursor)
     const ae = activeEnergyFor(workoutsRef.current, pre.fastStartedAt, p.lastActivityBankDate)
-    const s = summarize(mealsRef.current, bhr, ae, now)
+    const s = summarize(mealsRef.current, bhr, ae, now, bankCursor)
     const fill = s.caloriesOwed > 0 ? Math.min(1, s.caloriesOwed / da) : 0
     return { summary: s, activeEnergy: ae, fillFraction: fill }
   }, [])
