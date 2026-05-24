@@ -1,7 +1,8 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import type { MealEntry } from './types'
 import { useProfile, useMeals, useWeights, useWorkouts } from './store'
 import { Onboarding } from './components/Onboarding'
+import { InstallPWA } from './components/InstallPWA'
 import { Dashboard } from './components/Dashboard'
 import { EnergyLog } from './components/EnergyLog'
 import { WeightTracker } from './components/WeightTracker'
@@ -15,6 +16,17 @@ export default function App() {
   const { weights, add: addWeight, remove: removeWeight } = useWeights()
   const { workouts, add: addWorkout, remove: removeWorkout } = useWorkouts()
   const [screen, setScreen] = useState<Screen>('dashboard')
+  const [showInstall, setShowInstall] = useState(false)
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
 
   // Use the most recent logged weight for MET estimates, fall back to target weight
   const latestWeightKg = useMemo(() => {
@@ -56,7 +68,21 @@ export default function App() {
   }
 
   if (!profile) {
-    return <Onboarding onSave={saveProfile} />
+    return (
+      <Onboarding
+        onSave={p => {
+          saveProfile(p)
+          const alreadyInstalled =
+            window.matchMedia('(display-mode: standalone)').matches ||
+            (navigator as any).standalone === true
+          if (!alreadyInstalled) setShowInstall(true)
+        }}
+      />
+    )
+  }
+
+  if (showInstall) {
+    return <InstallPWA deferredPrompt={deferredPrompt} onDone={() => setShowInstall(false)} />
   }
 
   if (screen === 'log') {
