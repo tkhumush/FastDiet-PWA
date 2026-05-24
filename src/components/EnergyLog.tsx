@@ -356,9 +356,10 @@ export function EnergyLog({ meals, workouts, profile, onUpdate, onDelete, onDele
   const [pendingCal, setPendingCal] = useState<number>(0)
 
   const bmrHr = bmrPerHour(profile.sex, profile.age, profile.heightCm, profile.targetWeightKg)
-  const pre = summarize(meals, bmrHr, 0)
+  const bankCursor = profile.lastActivityBankDate ? new Date(profile.lastActivityBankDate) : null
+  const pre = summarize(meals, bmrHr, 0, new Date(), bankCursor)
   const activeEnergy = activeEnergyFor(workouts, pre.fastStartedAt, profile.lastActivityBankDate)
-  const summary = summarize(meals, bmrHr, activeEnergy)
+  const summary = summarize(meals, bmrHr, activeEnergy, new Date(), bankCursor)
 
   // Today's totals (filter by today)
   const todayMeals = meals.filter(m => m.kind === 'meal' && isToday(m.loggedAt))
@@ -562,7 +563,7 @@ export function EnergyLog({ meals, workouts, profile, onUpdate, onDelete, onDele
               entries.map(e => {
                 const id = e.kind === 'meal' ? e.meal.id : e.workout.id
                 const burnedAmount = e.kind === 'meal'
-                  ? (summary.mealAllocations[e.meal.id]?.burned ?? 0)
+                  ? (summary.mealAllocations[e.meal.id]?.burned ?? e.meal.calories)
                   : 0
                 return (
                   <EntryRow
