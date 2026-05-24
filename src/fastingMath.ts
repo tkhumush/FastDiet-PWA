@@ -54,7 +54,10 @@ export function summarize(
     if (previousTime) {
       const hours = (mealTime.getTime() - previousTime.getTime()) / 3_600_000
       pool -= bmrPerHr * hours
-      if (pool <= 0) fastStartIdx = null
+      if (pool <= 0) {
+        pool = 0
+        fastStartIdx = null
+      }
     }
     pool += meal.calories
     if (fastStartIdx === null && pool > 0) {
