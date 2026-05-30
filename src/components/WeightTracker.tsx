@@ -183,6 +183,13 @@ export function WeightTracker({ weights, profile, onAdd, onDelete: _onDelete, on
   const targetKgDisplay = active === 'target' ? (pendingTargetKg ?? profile.targetWeightKg) : profile.targetWeightKg
   const toGoKg = Math.max(0, currentKgDisplay - targetKgDisplay)
 
+  // Anchor the "log reading" slider to a tight window around the latest weight
+  // so each step is easy to hit (±15 lb imperial, ±7 kg metric). The slider
+  // operates in kg, so derive the window in kg from a stable reference.
+  const logWindowKg = profile.units === 'metric' ? 7 : 15 / 2.20462
+  const currentSliderMin = +(latestKg - logWindowKg).toFixed(1)
+  const currentSliderMax = +(latestKg + logWindowKg).toFixed(1)
+
   function openCurrent() { setPendingKg(latestKg); setActive('current') }
   function openTarget() { setPendingTargetKg(profile.targetWeightKg); setActive('target') }
   function closeAll() { setActive(null); setPendingKg(null); setPendingTargetKg(null) }
@@ -223,8 +230,8 @@ export function WeightTracker({ weights, profile, onAdd, onDelete: _onDelete, on
       >
         <Slider
           value={currentKgDisplay}
-          min={30}
-          max={200}
+          min={currentSliderMin}
+          max={currentSliderMax}
           step={0.1}
           onChange={n => setPendingKg(+n.toFixed(1))}
           showRange
