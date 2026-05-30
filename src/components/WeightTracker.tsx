@@ -66,13 +66,15 @@ function MiniChart({ data, target, height = 150 }: { data: ChartPoint[]; target:
     )
   }
   const w = 354
-  const values = data.map(d => d.v).concat([target])
-  const min = Math.min(...values)
-  const max = Math.max(...values)
-  const pad = (max - min) * 0.15 || 2
-  const range = (max - min) + pad * 2
+  // Bound the Y-axis tightly to the logged data (display units) so small
+  // changes stay visible. The goal line may fall outside this range when the
+  // target is far from current weight — that's acceptable.
+  const dataValues = data.map(d => d.v)
+  const yMin = Math.min(...dataValues) - 3
+  const yMax = Math.max(...dataValues) + 3
+  const yRange = yMax - yMin
   const xStep = w / (data.length - 1)
-  const toY = (v: number) => height - ((v - min + pad) / range) * height
+  const toY = (v: number) => height - ((v - yMin) / yRange) * height
   const linePath = data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${i * xStep} ${toY(d.v)}`).join(' ')
   const areaPath = linePath + ` L ${(data.length - 1) * xStep} ${height} L 0 ${height} Z`
   const targetY = toY(target)
