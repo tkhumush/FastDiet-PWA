@@ -95,7 +95,7 @@ function projectToTarget(data: ChartPoint[], target: number): Projection | null 
   return { endDate, endVal, reachesTarget }
 }
 
-function MiniChart({ data, target, height = 150 }: { data: ChartPoint[]; target: number; height?: number }) {
+function MiniChart({ data, target, units, height = 150 }: { data: ChartPoint[]; target: number; units: Units; height?: number }) {
   if (data.length < 2) {
     return (
       <div
@@ -113,12 +113,13 @@ function MiniChart({ data, target, height = 150 }: { data: ChartPoint[]; target:
     )
   }
   const w = 354
-  // Bound the Y-axis tightly to the logged data (display units) so small
-  // changes stay visible. The goal line may fall outside this range when the
-  // target is far from current weight — that's acceptable.
+  // Anchor the bottom of the Y-axis to the goal so the projection line (which
+  // trends toward the target) stays in view, and the top to the highest logged
+  // point plus a 5 lb headroom. Buffer is unit-aware so it's a true 5 lb.
   const dataValues = data.map(d => d.v)
-  const yMin = Math.min(...dataValues) - 3
-  const yMax = Math.max(...dataValues) + 3
+  const topPad = units === 'imperial' ? 5 : 5 / 2.20462
+  const yMin = Math.min(target, ...dataValues)
+  const yMax = Math.max(...dataValues) + topPad
   const yRange = yMax - yMin
   const toY = (v: number) => height - ((v - yMin) / yRange) * height
 
@@ -501,7 +502,7 @@ export function WeightTracker({ weights, profile, onAdd, onDelete: _onDelete, on
               marginBottom: 18,
             }}
           >
-            <MiniChart data={chartData} target={targetChartVal} height={150} />
+            <MiniChart data={chartData} target={targetChartVal} units={profile.units} height={150} />
           </div>
 
           {/* Melted card */}
