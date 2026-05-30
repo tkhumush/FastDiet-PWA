@@ -48,6 +48,53 @@ interface ChartPoint {
   label: string
 }
 
+interface Projection {
+  endDate: Date
+  endVal: number
+  reachesTarget: boolean
+}
+
+// Fit a linear trend to recent samples and project forward to the target.
+// Returns null when a projection wouldn't be meaningful (no trend, already at
+// the target, or trending away from it). Values are in display units.
+function projectToTarget(data: ChartPoint[], target: number): Projection | null {
+  const lastMs = data[data.length - 1].date.getTime()
+  const lastVal = data[data.length - 1].v
+
+  // Prefer the last 4 weeks of samples; fall back to everything if too sparse.
+  const windowMs = 28 * 86_400_000
+  let recent = data.filter(d => lastMs - d.date.getTime() <= windowMs)
+  if (recent.length < 2) recent = data
+
+  // Least-squares slope of value over days.
+  const baseMs = recent[0].date.getTime()
+  const xs = recent.map(d => (d.date.getTime() - baseMs) / 86_400_000)
+  const ys = recent.map(d => d.v)
+  const n = xs.length
+  const mx = xs.reduce((a, b) => a + b, 0) / n
+  const my = ys.reduce((a, b) => a + b, 0) / n
+  let num = 0
+  let den = 0
+  for (let i = 0; i < n; i++) {
+    num += (xs[i] - mx) * (ys[i] - my)
+    den += (xs[i] - mx) ** 2
+  }
+  if (den === 0) return null // all samples share a date — no trend
+
+  const slope = num / den // display units per day
+  const diff = target - lastVal
+  if (Math.abs(diff) < 0.1) return null // already at the target
+
+  const daysToTarget = diff / slope
+  if (!Number.isFinite(daysToTarget) || daysToTarget <= 0) return null // flat or moving away
+
+  const horizonDays = Math.min(daysToTarget, 90) // cap distant targets at a 90-day horizon
+  const reachesTarget = daysToTarget <= 90
+  const endVal = reachesTarget ? target : lastVal + slope * horizonDays
+  const endDate = new Date(lastMs + horizonDays * 86_400_000)
+  return { endDate, endVal, reachesTarget }
+}
+
 function MiniChart({ data, target, height = 150 }: { data: ChartPoint[]; target: number; height?: number }) {
   if (data.length < 2) {
     return (
@@ -66,18 +113,35 @@ function MiniChart({ data, target, height = 150 }: { data: ChartPoint[]; target:
     )
   }
   const w = 354
-  const values = data.map(d => d.v).concat([target])
-  const min = Math.min(...values)
-  const max = Math.max(...values)
-  const pad = (max - min) * 0.15 || 2
-  const range = (max - min) + pad * 2
-  const xStep = w / (data.length - 1)
-  const toY = (v: number) => height - ((v - min + pad) / range) * height
-  const linePath = data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${i * xStep} ${toY(d.v)}`).join(' ')
-  const areaPath = linePath + ` L ${(data.length - 1) * xStep} ${height} L 0 ${height} Z`
-  const targetY = toY(target)
-  const lastX = (data.length - 1) * xStep
+  // Bound the Y-axis tightly to the logged data (display units) so small
+  // changes stay visible. The goal line may fall outside this range when the
+  // target is far from current weight — that's acceptable.
+  const dataValues = data.map(d => d.v)
+  const yMin = Math.min(...dataValues) - 3
+  const yMax = Math.max(...dataValues) + 3
+  const yRange = yMax - yMin
+  const toY = (v: number) => height - ((v - yMin) / yRange) * height
+
+  const proj = projectToTarget(data, target)
+
+  // Time-based X axis so the projection can extend past the last reading. When
+  // every sample shares a date (zero span) fall back to even index spacing.
+  const tMin = data[0].date.getTime()
+  const lastMs = data[data.length - 1].date.getTime()
+  const tMax = proj ? Math.max(lastMs, proj.endDate.getTime()) : lastMs
+  const span = tMax - tMin
+  const toX = (ms: number, i: number) =>
+    span > 0 ? ((ms - tMin) / span) * w : (i / (data.length - 1)) * w
+
+  const linePath = data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${toX(d.date.getTime(), i)} ${toY(d.v)}`).join(' ')
+  const lastX = toX(lastMs, data.length - 1)
   const lastY = toY(data[data.length - 1].v)
+  const areaPath = linePath + ` L ${lastX} ${height} L 0 ${height} Z`
+  const targetY = toY(target)
+
+  const projEndX = proj ? toX(proj.endDate.getTime(), data.length - 1) : 0
+  const projEndY = proj ? toY(proj.endVal) : 0
+  const projLabelY = Math.max(12, Math.min(height - 4, projEndY - 10))
 
   return (
     <svg
@@ -128,6 +192,35 @@ function MiniChart({ data, target, height = 150 }: { data: ChartPoint[]; target:
         strokeLinejoin="round"
         style={{ filter: 'drop-shadow(0 0 8px rgba(76,217,210,0.55))' }}
       />
+      {proj && (
+        <>
+          <line
+            x1={lastX}
+            y1={lastY}
+            x2={projEndX}
+            y2={projEndY}
+            stroke={TK.coral}
+            strokeOpacity={0.7}
+            strokeWidth={2}
+            strokeDasharray="5 4"
+            strokeLinecap="round"
+          />
+          <circle cx={projEndX} cy={projEndY} r={3.5} fill={TK.coral} />
+          {proj.reachesTarget && (
+            <text
+              x={Math.min(projEndX, w - 4)}
+              y={projLabelY}
+              textAnchor="end"
+              fill={TK.coral}
+              fontSize={10}
+              fontWeight={700}
+              letterSpacing="0.02em"
+            >
+              Target ~{proj.endDate.toLocaleDateString([], { month: 'short', day: 'numeric' })}
+            </text>
+          )}
+        </>
+      )}
       <circle cx={lastX} cy={lastY} r={9} fill="rgba(76,217,210,0.18)" />
       <circle
         cx={lastX}
@@ -140,7 +233,7 @@ function MiniChart({ data, target, height = 150 }: { data: ChartPoint[]; target:
         {data[0]?.label}
       </text>
       <text x={w} y={height + 22} textAnchor="end" fill="rgba(244,248,248,0.32)" fontSize={9.5}>
-        {data[data.length - 1]?.label}
+        {proj ? proj.endDate.toLocaleDateString([], { month: 'short', day: 'numeric' }) : data[data.length - 1]?.label}
       </text>
     </svg>
   )
@@ -183,6 +276,13 @@ export function WeightTracker({ weights, profile, onAdd, onDelete: _onDelete, on
   const targetKgDisplay = active === 'target' ? (pendingTargetKg ?? profile.targetWeightKg) : profile.targetWeightKg
   const toGoKg = Math.max(0, currentKgDisplay - targetKgDisplay)
 
+  // Anchor the "log reading" slider to a tight window around the latest weight
+  // so each step is easy to hit (±15 lb imperial, ±7 kg metric). The slider
+  // operates in kg, so derive the window in kg from a stable reference.
+  const logWindowKg = profile.units === 'metric' ? 7 : 15 / 2.20462
+  const currentSliderMin = +(latestKg - logWindowKg).toFixed(1)
+  const currentSliderMax = +(latestKg + logWindowKg).toFixed(1)
+
   function openCurrent() { setPendingKg(latestKg); setActive('current') }
   function openTarget() { setPendingTargetKg(profile.targetWeightKg); setActive('target') }
   function closeAll() { setActive(null); setPendingKg(null); setPendingTargetKg(null) }
@@ -223,8 +323,8 @@ export function WeightTracker({ weights, profile, onAdd, onDelete: _onDelete, on
       >
         <Slider
           value={currentKgDisplay}
-          min={30}
-          max={200}
+          min={currentSliderMin}
+          max={currentSliderMax}
           step={0.1}
           onChange={n => setPendingKg(+n.toFixed(1))}
           showRange
