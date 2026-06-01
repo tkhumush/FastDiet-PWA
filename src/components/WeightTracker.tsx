@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import type { WeightSample, UserProfile, Units } from '../types'
 import { LightningTipModal } from './LightningTipModal'
 import { Chip } from './shared/Chip'
-import { Slider } from './shared/Slider'
+import { WeightInput } from './shared/WeightInput'
 import { ScrubberCard } from './shared/ScrubberCard'
 import { Eyebrow } from './shared/Eyebrow'
 
@@ -322,12 +322,12 @@ export function WeightTracker({ weights, profile, onAdd, onDelete: _onDelete, on
         onClose={closeAll}
         primary={{ label: 'Log reading', onClick: logReading }}
       >
-        <Slider
-          value={currentKgDisplay}
-          min={currentSliderMin}
-          max={currentSliderMax}
-          step={0.1}
-          onChange={n => setPendingKg(+n.toFixed(1))}
+        <WeightInput
+          valueKg={currentKgDisplay}
+          minKg={currentSliderMin}
+          maxKg={currentSliderMax}
+          units={profile.units}
+          onChangeKg={setPendingKg}
           showRange
         />
         <p
@@ -352,12 +352,12 @@ export function WeightTracker({ weights, profile, onAdd, onDelete: _onDelete, on
         onClose={closeAll}
         primary={{ label: 'Save goal', onClick: saveTarget }}
       >
-        <Slider
-          value={targetKgDisplay}
-          min={30}
-          max={200}
-          step={0.5}
-          onChange={n => setPendingTargetKg(n)}
+        <WeightInput
+          valueKg={targetKgDisplay}
+          minKg={30}
+          maxKg={200}
+          units={profile.units}
+          onChangeKg={setPendingTargetKg}
           showRange
         />
       </ScrubberCard>

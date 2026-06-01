@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { MealEntry, UserProfile, WorkoutEntry } from '../types'
 import { summarize, bmrPerHour, activeEnergyFor } from '../fastingMath'
-import { Slider } from './shared/Slider'
+import { NumberInput } from './shared/NumberInput'
 import { ScrubberCard } from './shared/ScrubberCard'
 import { Eyebrow } from './shared/Eyebrow'
 
@@ -439,12 +439,13 @@ export function EnergyLog({ meals, workouts, profile, onUpdate, onDelete, onDele
         danger={{ label: '🗑 Delete', onClick: deleteEntry }}
         primary={isMeal ? { label: 'Save', onClick: saveEdit } : undefined}
       >
-        <Slider
+        <NumberInput
           value={pendingCal}
           min={minCal}
           max={maxCal}
           step={stepCal}
           onChange={setPendingCal}
+          suffix="cal"
           showRange
         />
         <p
