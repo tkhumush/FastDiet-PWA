@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import type { WorkoutEntry } from '../types'
 import { WORKOUT_TYPES, estimateCalories, type WorkoutType } from '../workoutTypes'
 import { Chip } from './shared/Chip'
-import { Slider } from './shared/Slider'
+import { NumberInput } from './shared/NumberInput'
 import { ScrubberCard } from './shared/ScrubberCard'
 import { Eyebrow } from './shared/Eyebrow'
 
@@ -149,12 +149,13 @@ export function LogWorkoutModal({ weightKg, onSave, onCancel }: Props) {
         visible
         onClose={closeAll}
       >
-        <Slider
+        <NumberInput
           value={duration}
           min={5}
           max={180}
           step={5}
           onChange={n => { setDuration(n); setOverrideCal(null) }}
+          suffix="min"
           showRange
         />
         <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
@@ -192,12 +193,13 @@ export function LogWorkoutModal({ weightKg, onSave, onCancel }: Props) {
         visible
         onClose={closeAll}
       >
-        <Slider
+        <NumberInput
           value={calories}
           min={10}
           max={1500}
           step={5}
           onChange={n => setOverrideCal(n)}
+          suffix="cal"
           showRange
         />
         <p

@@ -2,7 +2,9 @@ import { useState } from 'react'
 import type { UserProfile, Sex, Units } from '../types'
 import { bmrPerHour } from '../fastingMath'
 import { Chip } from './shared/Chip'
-import { Slider } from './shared/Slider'
+import { NumberInput } from './shared/NumberInput'
+import { WeightInput } from './shared/WeightInput'
+import { HeightInput } from './shared/HeightInput'
 import { Segmented } from './shared/Segmented'
 import { ScrubberCard } from './shared/ScrubberCard'
 import { CTA } from './shared/CTA'
@@ -112,7 +114,7 @@ export function Onboarding({ onSave }: Props) {
   } else if (active === 'age') {
     scrubber = (
       <ScrubberCard label="Age" displayValue={age} visible onClose={() => setActive(null)}>
-        <Slider value={age} min={15} max={90} onChange={setAge} showRange />
+        <NumberInput value={age} min={15} max={90} onChange={setAge} suffix="yrs" showRange />
       </ScrubberCard>
     )
   } else if (active === 'height') {
@@ -129,7 +131,7 @@ export function Onboarding({ onSave }: Props) {
         visible
         onClose={() => setActive(null)}
       >
-        <Slider value={heightCm} min={130} max={220} onChange={setHeightCm} />
+        <HeightInput valueCm={heightCm} onChangeCm={setHeightCm} units={units} />
         <div style={{ marginTop: 14 }}>
           <Segmented
             options={['cm', 'ft / in']}
@@ -153,7 +155,7 @@ export function Onboarding({ onSave }: Props) {
         visible
         onClose={() => setActive(null)}
       >
-        <Slider value={targetKg} min={30} max={200} step={0.5} onChange={setTargetKg} />
+        <WeightInput valueKg={targetKg} onChangeKg={setTargetKg} units={units} minKg={30} maxKg={200} />
         <div style={{ marginTop: 14 }}>
           <Segmented
             options={['kg', 'lb']}

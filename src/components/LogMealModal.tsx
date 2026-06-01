@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import type { MealEntry } from '../types'
 import { Chip } from './shared/Chip'
-import { Slider } from './shared/Slider'
+import { NumberInput } from './shared/NumberInput'
 import { ScrubberCard } from './shared/ScrubberCard'
 import { Eyebrow } from './shared/Eyebrow'
 
@@ -133,7 +133,7 @@ export function LogMealModal({ onSave, onCancel, initialCalories = 500, initialN
         visible
         onClose={closeAll}
       >
-        <Slider value={cal} min={50} max={2000} step={10} onChange={setCal} showRange />
+        <NumberInput value={cal} min={50} max={2000} step={10} onChange={setCal} suffix="cal" showRange />
         <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
           {[200, 400, 600, 800, 1000].map(c => (
             <button
