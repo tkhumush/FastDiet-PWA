@@ -36,6 +36,11 @@ body {
   position: relative;
 }
 
+/* The public landing page is full-bleed; the app stays in its 480px column. */
+#root.landing-root {
+  max-width: none;
+}
+
 h1, h2, h3, h4 {
   color: var(--text);
 }

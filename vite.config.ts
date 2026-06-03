@@ -16,7 +16,12 @@ export default defineConfig({
         background_color: '#0a0a0a',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/',
+        // `id` pins the install identity so changing `start_url` does not make
+        // browsers treat existing installs as a new app (no reinstall). The
+        // public landing page lives at `/`; the installed app launches at `/app`.
+        id: '/',
+        start_url: '/app',
+        scope: '/',
         icons: [
           { src: 'pwa-64x64.png',            sizes: '64x64',    type: 'image/png' },
           { src: 'pwa-192x192.png',           sizes: '192x192',  type: 'image/png' },
