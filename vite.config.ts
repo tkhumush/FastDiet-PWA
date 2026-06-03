@@ -31,6 +31,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        // Landing-page screenshots are only shown to online browser visitors;
+        // don't bloat the installed app's offline precache with them.
+        globIgnores: ['**/screenshots/**'],
       },
     }),
   ],

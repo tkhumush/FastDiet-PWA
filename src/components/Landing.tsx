@@ -182,7 +182,12 @@ export function Landing() {
 
           {/* Hero screenshot */}
           <div style={{ flex: '1 1 240px', display: 'flex', justifyContent: 'center' }}>
-            <DeviceMockup alt="FastDiet dashboard" caption="Dashboard" width={250} />
+            <DeviceMockup
+              src="/screenshots/dashboard.png"
+              alt="FastDiet dashboard showing calories owed"
+              caption="Today at a glance"
+              width={250}
+            />
           </div>
         </section>
 
@@ -191,15 +196,24 @@ export function Landing() {
           <div
             style={{
               display: 'flex',
-              gap: 24,
-              overflowX: 'auto',
+              gap: 28,
+              flexWrap: 'wrap',
               padding: '12px 4px',
               justifyContent: 'center',
             }}
           >
-            <DeviceMockup alt="Energy log screen" caption="Energy log" width={190} />
-            <DeviceMockup alt="Weight tracker with projection" caption="Weight trend" width={190} />
-            <DeviceMockup alt="Activity bank screen" caption="Activity bank" width={190} />
+            <DeviceMockup
+              src="/screenshots/log.png"
+              alt="Energy log screen with logged meals"
+              caption="Energy log"
+              width={200}
+            />
+            <DeviceMockup
+              src="/screenshots/weight.png"
+              alt="Weight tracker with trend and projection to goal"
+              caption="Weight & projection"
+              width={200}
+            />
           </div>
         </section>
 
