@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { CTA } from './shared/CTA'
 import { Eyebrow } from './shared/Eyebrow'
 import { DeviceMockup } from './DeviceMockup'
+import { BmrJourneyChart } from './BmrJourneyChart'
 import { InstallSteps } from '../lib/installInstructions'
 import { detectPlatform, type BeforeInstallPromptEvent } from '../lib/platform'
 
@@ -39,6 +40,30 @@ const FEATURES: Feature[] = [
     body: 'Add it to your home screen for full-screen, instant launch, and full offline support. No app store required.',
   },
 ]
+
+// Three screenshots layered: two behind, side by side, one in front centered.
+function PhoneStack() {
+  const back = {
+    position: 'absolute' as const,
+    top: 44,
+    zIndex: 1,
+    opacity: 0.9,
+    filter: 'brightness(0.8)',
+  }
+  return (
+    <div style={{ position: 'relative', width: 300, height: 470, margin: '0 auto', maxWidth: '100%' }}>
+      <div style={{ ...back, left: 0, transform: 'rotate(-7deg)' }}>
+        <DeviceMockup src="/screenshots/log.png" alt="Energy log screen" width={150} />
+      </div>
+      <div style={{ ...back, right: 0, transform: 'rotate(7deg)' }}>
+        <DeviceMockup src="/screenshots/weight.png" alt="Weight tracker with projection" width={150} />
+      </div>
+      <div style={{ position: 'absolute', left: '50%', top: 0, transform: 'translateX(-50%)', zIndex: 2 }}>
+        <DeviceMockup src="/screenshots/dashboard.png" alt="FastDiet dashboard" width={200} />
+      </div>
+    </div>
+  )
+}
 
 export function Landing() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
@@ -180,40 +205,58 @@ export function Landing() {
             </p>
           </div>
 
-          {/* Hero screenshot */}
-          <div style={{ flex: '1 1 240px', display: 'flex', justifyContent: 'center' }}>
-            <DeviceMockup
-              src="/screenshots/dashboard.png"
-              alt="FastDiet dashboard showing calories owed"
-              caption="Today at a glance"
-              width={250}
-            />
+          {/* Hero screenshots — layered stack */}
+          <div style={{ flex: '1 1 300px', display: 'flex', justifyContent: 'center' }}>
+            <PhoneStack />
           </div>
         </section>
 
-        {/* Screenshot strip */}
-        <section style={{ padding: '24px 0' }}>
-          <div
-            style={{
-              display: 'flex',
-              gap: 28,
-              flexWrap: 'wrap',
-              padding: '12px 4px',
-              justifyContent: 'center',
-            }}
-          >
-            <DeviceMockup
-              src="/screenshots/log.png"
-              alt="Energy log screen with logged meals"
-              caption="Energy log"
-              width={200}
-            />
-            <DeviceMockup
-              src="/screenshots/weight.png"
-              alt="Weight tracker with trend and projection to goal"
-              caption="Weight & projection"
-              width={200}
-            />
+        {/* BMR Journey — the core concept */}
+        <section
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 40,
+            padding: '52px 0',
+          }}
+        >
+          <div style={{ flex: '1 1 300px', minWidth: 280 }}>
+            <Eyebrow>How it works</Eyebrow>
+            <h2
+              style={{
+                margin: '14px 0 16px',
+                fontSize: 'clamp(26px, 4.4vw, 36px)',
+                fontWeight: 600,
+                letterSpacing: '-0.02em',
+                lineHeight: 1.15,
+              }}
+            >
+              Live at your slimmer self's burn rate — starting today
+            </h2>
+            <p style={{ margin: 0, fontSize: 16, lineHeight: 1.65, color: 'var(--fd-muted)', maxWidth: 460 }}>
+              Right now your body burns more than it will at your goal weight. Instead of waiting,
+              FastDiet holds your daily intake to your{' '}
+              <strong style={{ color: 'var(--fd-text)', fontWeight: 600 }}>goal-weight BMR</strong> — the
+              rate your future, slimmer self burns. You live on that new standard from day one. The gap
+              between the two rates is a daily deficit, drawn automatically from stored fat — and it
+              closes as your weight settles into your goal.
+            </p>
+          </div>
+          <div style={{ flex: '1 1 360px', minWidth: 300 }}>
+            <div
+              style={{
+                padding: '18px 18px 14px',
+                borderRadius: 20,
+                background: 'var(--fd-surface)',
+                border: '1px solid var(--fd-hairline)',
+              }}
+            >
+              <h3 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em' }}>
+                BMR Journey
+              </h3>
+              <BmrJourneyChart />
+            </div>
           </div>
         </section>
 
