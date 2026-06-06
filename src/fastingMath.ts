@@ -13,12 +13,16 @@ export function activeEnergyFor(
   fastStartedAt: Date | null,
   bankCursor: string | null
 ): number {
-  if (!fastStartedAt) return 0
-  const effectiveStart = bankCursor
-    ? new Date(Math.max(fastStartedAt.getTime(), new Date(bankCursor).getTime()))
-    : fastStartedAt
+  const cursor = bankCursor ? new Date(bankCursor) : null
+  // Window start for counting workout energy. During an active fast, only
+  // count workouts since the fast began (clamped to the bank cursor). When
+  // there's no active fast — i.e. the banked / "ahead" state — fall back to the
+  // bank cursor so workouts still deepen the bank instead of being dropped.
+  const start = fastStartedAt
+    ? (cursor ? new Date(Math.max(fastStartedAt.getTime(), cursor.getTime())) : fastStartedAt)
+    : cursor
   return workouts
-    .filter(w => new Date(w.loggedAt) >= effectiveStart)
+    .filter(w => !start || new Date(w.loggedAt) >= start)
     .reduce((sum, w) => sum + w.caloriesBurned, 0)
 }
 
