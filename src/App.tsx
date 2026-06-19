@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
+import { Capacitor } from '@capacitor/core'
 import type { MealEntry } from './types'
 import { useProfile, useMeals, useWeights, useWorkouts } from './store'
 import { Onboarding } from './components/Onboarding'
@@ -77,7 +78,10 @@ export default function App() {
       <Onboarding
         onSave={p => {
           saveProfile(p)
+          // Native (Capacitor) builds are already an installed app — never show
+          // the web "Add to Home Screen" prompt there.
           const alreadyInstalled =
+            Capacitor.isNativePlatform() ||
             window.matchMedia('(display-mode: standalone)').matches ||
             (navigator as any).standalone === true
           if (!alreadyInstalled) setShowInstall(true)

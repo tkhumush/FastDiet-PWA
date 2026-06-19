@@ -2,10 +2,29 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// Native (Capacitor) builds must NOT ship the PWA service worker. Capacitor already
+// serves all assets locally and works offline; a Workbox SW inside the webview
+// precaches a hashed index.html and then serves it stale after a rebuild, pointing at
+// a bundle that no longer exists — which 404s the app's entry script and renders a
+// blank white screen. Build native with `CAP_BUILD=1` (see package.json build:native).
+const isNativeBuild = process.env.CAP_BUILD === '1'
+
+// Vite tags the entry <script type="module"> and stylesheet with `crossorigin`.
+// Under Capacitor's custom scheme (capacitor://localhost on iOS), that forces WKWebView
+// into CORS mode; the scheme handler returns no Access-Control-Allow-Origin header, so
+// the webview silently refuses to execute the module → blank white screen. Same-origin
+// in a real browser doesn't care, so we only strip it for native builds.
+const stripCrossorigin = {
+  name: 'strip-crossorigin',
+  transformIndexHtml(html: string) {
+    return html.replace(/ crossorigin/g, '')
+  },
+}
+
 export default defineConfig({
   plugins: [
     react(),
-    VitePWA({
+    ...(isNativeBuild ? [stripCrossorigin] : [VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon-180x180.png'],
       manifest: {
@@ -35,6 +54,6 @@ export default defineConfig({
         // don't bloat the installed app's offline precache with them.
         globIgnores: ['**/screenshots/**'],
       },
-    }),
+    })]),
   ],
 })
