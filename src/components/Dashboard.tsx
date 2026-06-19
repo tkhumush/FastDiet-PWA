@@ -14,7 +14,7 @@ interface Props {
   latestWeightKg: number
   onAddMeal: (meal: MealEntry) => void
   onAddWorkout: (workout: WorkoutEntry) => void
-  onConvertBank: (amount: number) => void
+  onConvertBank: (amount: number, at?: string) => void
   onNavigateLog: () => void
   onNavigateWeight: () => void
   onNavigateProfile: () => void
@@ -76,6 +76,10 @@ export function Dashboard({
   const [showMealModal, setShowMealModal] = useState(false)
   const [showWorkoutModal, setShowWorkoutModal] = useState(false)
   const [showBankChoice, setShowBankChoice] = useState(false)
+  // When > 0, the user chose "Melt it away" and the melt is pending the meal they
+  // are about to log. We hold the amount and apply the melt on save, anchored to
+  // the meal's timestamp so past-dated meals still count. See handleConvertBank.
+  const [pendingMelt, setPendingMelt] = useState(0)
 
   const bmrHr = bmrPerHour(profile.sex, profile.age, profile.heightCm, profile.targetWeightKg)
   const dailyAllowance = bmrHr * 24
@@ -396,7 +400,7 @@ export function Dashboard({
         <BankChoiceModal
           bankBalance={summary.bankBalance}
           onUsBank={() => { setShowBankChoice(false); setShowMealModal(true) }}
-          onMelt={() => { onConvertBank(summary.bankBalance); setShowBankChoice(false); setShowMealModal(true) }}
+          onMelt={() => { setPendingMelt(summary.bankBalance); setShowBankChoice(false); setShowMealModal(true) }}
           onCancel={() => setShowBankChoice(false)}
         />
       )}
@@ -404,10 +408,16 @@ export function Dashboard({
       {showMealModal && (
         <LogMealModal
           onSave={meal => {
+            // Apply a pending melt before logging the meal, anchored to the meal's
+            // timestamp so a past-dated meal isn't dropped behind the bank cursor.
+            if (pendingMelt > 0) {
+              onConvertBank(pendingMelt, meal.loggedAt)
+              setPendingMelt(0)
+            }
             onAddMeal(meal)
             setShowMealModal(false)
           }}
-          onCancel={() => setShowMealModal(false)}
+          onCancel={() => { setPendingMelt(0); setShowMealModal(false) }}
         />
       )}
 
