@@ -42,12 +42,17 @@ export default function App() {
     await saveProfile({ ...profile, cumulativeBankedCalories: 0, lastActivityBankDate: null })
   }, [profile, meals, removeMeal, saveProfile])
 
-  const handleConvertBank = useCallback(async (amount: number) => {
+  // `at` is the moment the melt takes effect. When a melt is paired with logging
+  // a meal, pass the meal's timestamp so the bank cursor lands on (not after) the
+  // meal — otherwise a meal logged in the past falls before the cursor and is
+  // dropped from the calculation. Defaults to now.
+  const handleConvertBank = useCallback(async (amount: number, at?: string) => {
     if (!profile) return
+    const ts = at ?? new Date().toISOString()
     const bankEntry: MealEntry = {
       id: crypto.randomUUID(),
       calories: Math.round(amount),
-      loggedAt: new Date().toISOString(),
+      loggedAt: ts,
       name: 'Activity banked',
       kind: 'activityBank',
     }
@@ -55,7 +60,7 @@ export default function App() {
     await saveProfile({
       ...profile,
       cumulativeBankedCalories: profile.cumulativeBankedCalories + amount,
-      lastActivityBankDate: new Date().toISOString(),
+      lastActivityBankDate: ts,
     })
   }, [profile, addMeal, saveProfile])
 
