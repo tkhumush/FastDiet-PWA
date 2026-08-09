@@ -309,6 +309,14 @@ export function Dashboard({
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
+                  // The gradient IS the glyph here (the text itself is
+                  // transparent), so the background box has to cover the ink.
+                  // letter-spacing also applies *after* the final character,
+                  // pulling this inline box ~6.6px in at 120px — far enough that
+                  // the last digit's right edge fell outside the box and was
+                  // sliced flat. Pad the box back out; the `cal` label below
+                  // drops its matching margin so spacing is unchanged.
+                  paddingRight: '0.067em',
                 }}
               >
                 {heroNumber}
@@ -317,7 +325,8 @@ export function Dashboard({
                 style={{
                   position: 'relative',
                   zIndex: 1,
-                  marginLeft: 8,
+                  // No margin: the 8px gap now comes from the number's
+                  // paddingRight above, so the two stay where they were.
                   fontSize: 17,
                   color: TK.muted,
                   fontWeight: 500,
