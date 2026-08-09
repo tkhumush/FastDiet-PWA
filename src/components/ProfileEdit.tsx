@@ -9,6 +9,8 @@ import { Segmented } from './shared/Segmented'
 import { ScrubberCard } from './shared/ScrubberCard'
 import { CTA } from './shared/CTA'
 import { Eyebrow } from './shared/Eyebrow'
+import { ResetAppModal } from './ResetAppModal'
+import { clearAll } from '../db'
 
 interface Props {
   profile: UserProfile
@@ -34,6 +36,17 @@ export function ProfileEdit({ profile, onSave, onBack }: Props) {
   const [heightCm, setHeightCm] = useState(Math.round(profile.heightCm))
   const [targetKg, setTargetKg] = useState(+profile.targetWeightKg.toFixed(1))
   const [active, setActive] = useState<ChipKey>(null)
+  const [showReset, setShowReset] = useState(false)
+
+  // A hard reload rather than clearing React state by hand: meals, workouts and
+  // weights each live in their own hook up in App, and a stale copy of any of
+  // them would survive a purely in-memory reset. Reloading re-runs Root, which
+  // finds no profile and renders Onboarding. Works the same in the browser and
+  // in the Capacitor webview.
+  async function handleReset() {
+    await clearAll()
+    window.location.reload()
+  }
 
   function save() {
     onSave({
@@ -245,8 +258,41 @@ export function ProfileEdit({ profile, onSave, onBack }: Props) {
             <Chip active={active === 'weight'} onClick={() => setActive(active === 'weight' ? null : 'weight')}>{weightDisplay}</Chip>
             .
           </div>
+
+          {/* Danger zone. `marginTop: auto` parks it at the far end of the
+              scroll, away from the pinned Save button, so reaching it is a
+              deliberate act rather than a mis-tap. */}
+          <div style={{ marginTop: 'auto', paddingTop: 56 }}>
+            <Eyebrow color={TK.muted} size={11}>Danger zone</Eyebrow>
+            <button
+              onClick={() => setShowReset(true)}
+              style={{
+                marginTop: 12,
+                width: '100%',
+                padding: '14px 20px',
+                borderRadius: 14,
+                fontSize: 15,
+                fontWeight: 600,
+                color: '#f87171',
+                background: 'rgba(239,68,68,0.10)',
+                border: '1px solid rgba(248,113,113,0.28)',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              Reset app
+            </button>
+            <p style={{ margin: '10px 2px 0', fontSize: 12.5, lineHeight: 1.5, color: TK.muted }}>
+              Erases every meal, workout and weight reading along with your
+              profile, and starts you over at setup.
+            </p>
+          </div>
         </div>
       </div>
+
+      {showReset && (
+        <ResetAppModal onConfirm={handleReset} onCancel={() => setShowReset(false)} />
+      )}
 
       {/* Pinned bottom scrubber + footer */}
       <div

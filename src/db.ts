@@ -72,6 +72,25 @@ export async function deleteWeight(id: string): Promise<void> {
   await (await getDb()).delete('weights', id)
 }
 
+/**
+ * Wipe every store — the "reset app" path.
+ *
+ * Cleared in a single transaction so a failure part-way through cannot leave a
+ * half-erased database (e.g. meals gone but the banked-calorie cursor on the
+ * profile still pointing at them, which would read as corrupt rather than fresh).
+ */
+export async function clearAll(): Promise<void> {
+  const db = await getDb()
+  const tx = db.transaction(['profile', 'meals', 'weights', 'workouts'], 'readwrite')
+  await Promise.all([
+    tx.objectStore('profile').clear(),
+    tx.objectStore('meals').clear(),
+    tx.objectStore('weights').clear(),
+    tx.objectStore('workouts').clear(),
+    tx.done,
+  ])
+}
+
 export async function getWorkouts(): Promise<WorkoutEntry[]> {
   return (await getDb()).getAll('workouts')
 }
