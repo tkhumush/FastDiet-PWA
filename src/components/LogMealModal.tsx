@@ -87,6 +87,10 @@ export function LogMealModal({ onSave, onCancel, initialCalories = 500, initialN
           onChange={e => setName(e.target.value)}
           placeholder="e.g. Poke bowl"
           autoFocus
+          autoCapitalize="sentences"
+          autoCorrect="off"
+          autoComplete="off"
+          spellCheck={false}
           style={{
             width: '100%',
             padding: '12px 14px',
