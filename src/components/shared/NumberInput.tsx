@@ -74,6 +74,12 @@ export function NumberInput({ value, min, max, step = 1, onChange, showRange = f
         <input
           type="text"
           inputMode="decimal"
+          // type="text" leaves iOS free to treat this like prose: autocorrect,
+          // caps and AutoFill all apply to a field that only ever holds digits.
+          autoCapitalize="off"
+          autoCorrect="off"
+          autoComplete="off"
+          spellCheck={false}
           value={text}
           aria-label={ariaLabel}
           onChange={e => handleInput(e.target.value)}

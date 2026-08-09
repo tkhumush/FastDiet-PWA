@@ -65,6 +65,14 @@ export function Onboarding({ onSave }: Props) {
           onChange={e => setName(e.target.value)}
           placeholder="Your name"
           autoFocus
+          // iOS autocorrects unfamiliar names into real words as you type
+          // ("Taymur" silently became "Taylor"), and offers a Contacts AutoFill
+          // chip that floats over the app until the next launch. Names are not
+          // dictionary words — turn the lot off on every free-text field.
+          autoCapitalize="words"
+          autoCorrect="off"
+          autoComplete="off"
+          spellCheck={false}
           style={{
             width: '100%',
             padding: '12px 14px',

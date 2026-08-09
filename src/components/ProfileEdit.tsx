@@ -63,6 +63,10 @@ export function ProfileEdit({ profile, onSave, onBack }: Props) {
           onChange={e => setName(e.target.value)}
           placeholder="Your name"
           autoFocus
+          autoCapitalize="words"
+          autoCorrect="off"
+          autoComplete="off"
+          spellCheck={false}
           style={{
             width: '100%',
             padding: '12px 14px',
