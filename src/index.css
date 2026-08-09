@@ -17,6 +17,10 @@
   color-scheme: dark;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Inherited, so setting it here covers the tree: kills the grey flash
+     WKWebView paints over every tapped element. */
+  -webkit-tap-highlight-color: transparent;
 }
 
 *, *::before, *::after {
@@ -27,6 +31,25 @@ body {
   margin: 0;
   background: var(--bg);
   overscroll-behavior: none;
+
+  /* Inside a native shell, a long press on a label or button should do nothing.
+     The browser default — a selection loupe plus a copy/share callout — is one
+     of the clearest tells that a screen is really a web page. Fields the user
+     actually types into opt back in below. */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Suppress double-tap-to-zoom on controls so a quick second tap registers as a
+   second tap rather than a zoom gesture. */
+button, a, [role="button"] {
+  touch-action: manipulation;
 }
 
 #root {
