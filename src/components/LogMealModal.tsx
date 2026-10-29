@@ -6,7 +6,7 @@ import { ScrubberCard } from './shared/ScrubberCard'
 import { Eyebrow } from './shared/Eyebrow'
 
 interface Props {
-  onSave: (meal: MealEntry) => void
+  onSave: (meal: MealEntry) => Promise<void> | void
   onCancel: () => void
   initialCalories?: number
   initialName?: string
@@ -42,6 +42,7 @@ function timeAgoLabel(min: number): string {
 }
 
 export function LogMealModal({ onSave, onCancel, initialCalories = 500, initialName = '', initialPhoto }: Props) {
+  const [saveError, setSaveError] = useState('')
   const [name, setName] = useState(initialName || 'Lunch')
   const [cal, setCal] = useState(initialCalories)
   const [minAgo, setMinAgo] = useState(0)
@@ -65,7 +66,8 @@ export function LogMealModal({ onSave, onCancel, initialCalories = 500, initialN
     e.target.value = ''
   }
 
-  function handleSave() {
+  async function handleSave() {
+    try {
     const trimmed = name.trim()
     const meal: MealEntry = {
       id: crypto.randomUUID(),
@@ -75,7 +77,8 @@ export function LogMealModal({ onSave, onCancel, initialCalories = 500, initialN
       kind: 'meal',
       photoDataUrl: photo,
     }
-    onSave(meal)
+    await onSave(meal)
+    } catch (e) {setSaveError(e instanceof Error ? e.message : 'Save failed. Please retry.')}
   }
 
   let scrubber: React.ReactNode = null
@@ -87,6 +90,10 @@ export function LogMealModal({ onSave, onCancel, initialCalories = 500, initialN
           onChange={e => setName(e.target.value)}
           placeholder="e.g. Poke bowl"
           autoFocus
+          autoCapitalize="sentences"
+          autoCorrect="off"
+          autoComplete="off"
+          spellCheck={false}
           style={{
             width: '100%',
             padding: '12px 14px',
@@ -276,6 +283,7 @@ export function LogMealModal({ onSave, onCancel, initialCalories = 500, initialN
         overflow: 'hidden',
       }}
     >
+      {saveError && <p role="alert">{saveError}</p>}
       <input
         ref={cameraInputRef}
         type="file"

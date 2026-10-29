@@ -1,4 +1,6 @@
+import { currentWeight, evaluateProfile } from './safetyPolicy'
 import { useState, useCallback, useMemo, useEffect } from 'react'
+import { Capacitor } from '@capacitor/core'
 import type { MealEntry } from './types'
 import { useProfile, useMeals, useWeights, useWorkouts } from './store'
 import { Onboarding } from './components/Onboarding'
@@ -11,10 +13,11 @@ import { ProfileEdit } from './components/ProfileEdit'
 type Screen = 'dashboard' | 'log' | 'weight' | 'profile'
 
 export default function App() {
-  const { profile, loading, save: saveProfile } = useProfile()
+  const { profile, loading, save: saveRawProfile, revoke: revokeSuitability } = useProfile()
   const { meals, add: addMeal, update: updateMeal, remove: removeMeal } = useMeals()
-  const { weights, add: addWeight, remove: removeWeight } = useWeights()
+  const { weights, loading: weightsLoading, refresh: refreshWeights, add: addWeight, remove: removeWeight } = useWeights()
   const { workouts, add: addWorkout, remove: removeWorkout } = useWorkouts()
+  const saveProfile = useCallback(async (p: Parameters<typeof saveRawProfile>[0], options?: {reaffirm: true}) => { const assertCurrent = await saveRawProfile(p, options); await refreshWeights(); assertCurrent() }, [saveRawProfile, refreshWeights])
   const [screen, setScreen] = useState<Screen>('dashboard')
   const [showInstall, setShowInstall] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
@@ -28,11 +31,7 @@ export default function App() {
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
 
-  // Use the most recent logged weight for MET estimates, fall back to target weight
-  const latestWeightKg = useMemo(() => {
-    if (weights.length === 0 || !profile) return profile?.targetWeightKg ?? 70
-    return weights[0].kg
-  }, [weights, profile])
+  const latestWeightKg = useMemo(() => profile ? currentWeight(profile, weights) as number : NaN, [weights, profile])
 
   const handleResetMelt = useCallback(async () => {
     if (!profile) return
@@ -64,7 +63,7 @@ export default function App() {
     })
   }, [profile, addMeal, saveProfile])
 
-  if (loading) {
+  if (loading || weightsLoading) {
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a' }}>
         <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '1.5rem', fontWeight: 100 }}>FastDiet</div>
@@ -75,15 +74,26 @@ export default function App() {
   if (!profile) {
     return (
       <Onboarding
-        onSave={p => {
-          saveProfile(p)
+        onSave={async p => {
+          await saveProfile(p, {reaffirm: true})
+          // Native (Capacitor) builds are already an installed app — never show
+          // the web "Add to Home Screen" prompt there.
           const alreadyInstalled =
+            Capacitor.isNativePlatform() ||
             window.matchMedia('(display-mode: standalone)').matches ||
             (navigator as any).standalone === true
           if (!alreadyInstalled) setShowInstall(true)
         }}
       />
     )
+  }
+
+  const restricted = !evaluateProfile(profile, weights).eligible
+  if (restricted || screen === 'profile') {
+    return <ProfileEdit weights={weights} profile={profile} latestWeightKg={latestWeightKg}
+      onRevoke={revokeSuitability}
+      onSave={async updated => { await saveProfile(updated, {reaffirm: true}); setScreen('dashboard') }}
+      onBack={() => setScreen('dashboard')} />
   }
 
   if (showInstall) {
@@ -118,15 +128,6 @@ export default function App() {
     )
   }
 
-  if (screen === 'profile') {
-    return (
-      <ProfileEdit
-        profile={profile}
-        onSave={async updated => { await saveProfile(updated); setScreen('dashboard') }}
-        onBack={() => setScreen('dashboard')}
-      />
-    )
-  }
 
   return (
     <Dashboard

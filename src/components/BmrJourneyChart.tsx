@@ -69,6 +69,7 @@ export function BmrJourneyChart({ now = 78, goal = 70 }: Props) {
 
   return (
     <div ref={ref} style={{ width: '100%' }}>
+      <p>Illustrative resting energy only; not an intake target or prediction of weight loss.</p>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }}>
         <defs>
           <linearGradient id="bmr-line" x1="0" y1="0" x2="1" y2="0">

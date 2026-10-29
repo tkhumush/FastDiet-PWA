@@ -1,3 +1,4 @@
+import { safetyNotice } from '../safetyPolicy'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { UserProfile, MealEntry, WorkoutEntry } from '../types'
 import { summarize, bmrPerHour, activeEnergyFor } from '../fastingMath'
@@ -82,24 +83,24 @@ export function Dashboard({
   const [pendingMelt, setPendingMelt] = useState(0)
 
   const bmrHr = bmrPerHour(profile.sex, profile.age, profile.heightCm, profile.targetWeightKg)
-  const dailyAllowance = bmrHr * 24
+  const dailyRestingEstimate = bmrHr * 24
 
   // Refs keep interval callback current without restarting it
   const mealsRef = useRef(meals)
   const workoutsRef = useRef(workouts)
   const profileRef = useRef(profile)
   const bmrHrRef = useRef(bmrHr)
-  const dailyAllowanceRef = useRef(dailyAllowance)
+  const dailyRestingEstimateRef = useRef(dailyRestingEstimate)
   mealsRef.current = meals
   workoutsRef.current = workouts
   profileRef.current = profile
   bmrHrRef.current = bmrHr
-  dailyAllowanceRef.current = dailyAllowance
+  dailyRestingEstimateRef.current = dailyRestingEstimate
 
   const buildView = useCallback((now: Date) => {
     const bhr = bmrHrRef.current
     const p = profileRef.current
-    const da = dailyAllowanceRef.current
+    const da = dailyRestingEstimateRef.current
     const bankCursor = p.lastActivityBankDate ? new Date(p.lastActivityBankDate) : null
     const pre = summarize(mealsRef.current, bhr, 0, now, bankCursor)
     const ae = activeEnergyFor(workoutsRef.current, pre.fastStartedAt, p.lastActivityBankDate)
@@ -143,7 +144,7 @@ export function Dashboard({
   }
 
   const isBanked = summary.bankBalance > 0
-  const eyebrowLabel = isBanked ? 'Calories ahead' : 'You owe'
+  const eyebrowLabel = isBanked ? 'Estimated surplus' : 'Accounting balance'
   const heroNumber = isBanked
     ? `−${Math.round(summary.bankBalance)}`
     : Math.round(summary.caloriesOwed)
@@ -162,7 +163,7 @@ export function Dashboard({
           color: TK.muted,
         }}
       >
-        You've burned more than you ate — fat is converting. Eat when you're hungry.
+        The accounting estimate is ahead. Eat when you need food; it does not establish fat loss.
       </div>
     )
   } else if (summary.projectedFinish && summary.caloriesOwed > 0) {
@@ -177,7 +178,7 @@ export function Dashboard({
           color: TK.muted,
         }}
       >
-        Next meal at{' '}
+        Accounting projection at{' '}
         <span
           style={{
             color: TK.text,
@@ -195,7 +196,7 @@ export function Dashboard({
         <span style={{ color: TK.text, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
           {formatRelative(summary.projectedFinish)}
         </span>.
-        Burning{' '}
+        Estimated resting energy{' '}
         <span style={{ color: TK.text, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
           {Math.round(bmrHr)}
         </span>
@@ -214,7 +215,7 @@ export function Dashboard({
           color: TK.muted,
         }}
       >
-        Log a meal to start your timer.
+        Log a meal to view the accounting estimate. Eat when you need food.
       </div>
     )
   }
@@ -274,6 +275,7 @@ export function Dashboard({
             <div style={{ width: 40 }} />
           </div>
 
+          <p style={{fontSize:13, lineHeight:1.5}}>{safetyNotice}</p>
           {/* Hero */}
           <div
             style={{
@@ -309,6 +311,14 @@ export function Dashboard({
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
+                  // The gradient IS the glyph here (the text itself is
+                  // transparent), so the background box has to cover the ink.
+                  // letter-spacing also applies *after* the final character,
+                  // pulling this inline box ~6.6px in at 120px — far enough that
+                  // the last digit's right edge fell outside the box and was
+                  // sliced flat. Pad the box back out; the `cal` label below
+                  // drops its matching margin so spacing is unchanged.
+                  paddingRight: '0.067em',
                 }}
               >
                 {heroNumber}
@@ -317,7 +327,8 @@ export function Dashboard({
                 style={{
                   position: 'relative',
                   zIndex: 1,
-                  marginLeft: 8,
+                  // No margin: the 8px gap now comes from the number's
+                  // paddingRight above, so the two stay where they were.
                   fontSize: 17,
                   color: TK.muted,
                   fontWeight: 500,
@@ -407,14 +418,14 @@ export function Dashboard({
 
       {showMealModal && (
         <LogMealModal
-          onSave={meal => {
+          onSave={async meal => {
             // Apply a pending melt before logging the meal, anchored to the meal's
             // timestamp so a past-dated meal isn't dropped behind the bank cursor.
             if (pendingMelt > 0) {
-              onConvertBank(pendingMelt, meal.loggedAt)
+              await onConvertBank(pendingMelt, meal.loggedAt)
               setPendingMelt(0)
             }
-            onAddMeal(meal)
+            await onAddMeal(meal)
             setShowMealModal(false)
           }}
           onCancel={() => { setPendingMelt(0); setShowMealModal(false) }}
@@ -424,7 +435,7 @@ export function Dashboard({
       {showWorkoutModal && (
         <LogWorkoutModal
           weightKg={latestWeightKg}
-          onSave={workout => { onAddWorkout(workout); setShowWorkoutModal(false) }}
+          onSave={async workout => { await onAddWorkout(workout); setShowWorkoutModal(false) }}
           onCancel={() => setShowWorkoutModal(false)}
         />
       )}

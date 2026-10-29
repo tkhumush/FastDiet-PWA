@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { tapFeedback } from '../../lib/nativeShell'
 
 interface Props {
   children: ReactNode
@@ -13,7 +14,7 @@ export function CTA({ children, warm = false, size = 'lg', onClick, disabled, ty
   return (
     <button
       type={type}
-      onClick={onClick}
+      onClick={onClick && (() => { tapFeedback(); onClick() })}
       disabled={disabled}
       style={{
         width: '100%',

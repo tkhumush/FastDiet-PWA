@@ -18,13 +18,13 @@ export function BankChoiceModal({ bankBalance, onUsBank, onMelt, onCancel }: Pro
         <div className={bankStyles.hero}>
           <span className={bankStyles.icon}>💧</span>
           <p className={bankStyles.balance}>+{Math.round(bankBalance)} cal banked</p>
-          <p className={bankStyles.sub}>You've burned more than you loaded.</p>
+          <p className={bankStyles.sub}>The accounting estimate shows a surplus, not measured fat loss.</p>
         </div>
 
         <div className={bankStyles.options}>
           <button className={bankStyles.option} onClick={onUsBank}>
             <strong>→ Use my bank</strong>
-            <span>Banked calories absorb the cost of this meal. Any leftover stays in the bank.</span>
+            <span>Apply the accounting balance to this entry. This is not an instruction about eating.</span>
           </button>
           <button className={bankStyles.option} onClick={onMelt}>
             <strong>💧 Melt it away</strong>

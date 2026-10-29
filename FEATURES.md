@@ -1,5 +1,13 @@
 # FastDiet PWA — Feature Parity Analysis
 
+> ⚠️ **Superseded in part (2026-06-19).** This document analyzes the PWA as a *standalone
+> web app* with native iOS kept separate. The decided strategy is now a **single PWA
+> codebase shipped to three targets (PWA / iOS / Android) via Capacitor** — see
+> [ROADMAP.md](./ROADMAP.md). Under Capacitor, several items below marked "❌ NOT possible
+> in a PWA" (HealthKit, notifications, StoreKit/IAP, Siri/App Intents) become achievable
+> again through native plugins. Treat the ❌ section as "not possible in a *plain* PWA,"
+> not as a limitation of the project.
+
 ## Summary
 
 The core diet logic (BMR calculation, FIFO fast tracking, calorie bank, weight tracker) translates directly to a PWA. The three things that **cannot** be replicated are HealthKit integration, the home-screen widget, and reliable background refresh. Everything else is achievable — some with minor UX trade-offs.

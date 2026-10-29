@@ -8,7 +8,7 @@ import { Eyebrow } from './shared/Eyebrow'
 
 interface Props {
   weightKg: number
-  onSave: (workout: WorkoutEntry) => void
+  onSave: (workout: WorkoutEntry) => Promise<void> | void
   onCancel: () => void
 }
 
@@ -68,6 +68,7 @@ function BreakdownStat({
 }
 
 export function LogWorkoutModal({ weightKg, onSave, onCancel }: Props) {
+  const [saveError, setSaveError] = useState('')
   // Default to cycling (index 2 in WORKOUT_TYPES)
   const [type, setType] = useState<WorkoutType>(WORKOUT_TYPES[2] ?? WORKOUT_TYPES[0])
   const [duration, setDuration] = useState(30)
@@ -82,8 +83,9 @@ export function LogWorkoutModal({ weightKg, onSave, onCancel }: Props) {
 
   const closeAll = () => setActive(null)
 
-  function handleSave() {
-    onSave({
+  async function handleSave() {
+    try {
+    await onSave({
       id: crypto.randomUUID(),
       loggedAt: new Date().toISOString(),
       workoutTypeId: type.id,
@@ -92,6 +94,7 @@ export function LogWorkoutModal({ weightKg, onSave, onCancel }: Props) {
       durationMinutes: duration,
       caloriesBurned: calories,
     })
+    } catch (e) {setSaveError(e instanceof Error ? e.message : 'Save failed. Please retry.')}
   }
 
   let scrubber: React.ReactNode = null
@@ -159,6 +162,7 @@ export function LogWorkoutModal({ weightKg, onSave, onCancel }: Props) {
           showRange
         />
         <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
+      {saveError && <p role="alert">{saveError}</p>}
           {[15, 30, 45, 60, 90].map(d => (
             <button
               key={d}

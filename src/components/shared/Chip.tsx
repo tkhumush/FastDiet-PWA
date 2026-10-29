@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { tapFeedback } from '../../lib/nativeShell'
 
 interface Props {
   children: ReactNode
@@ -11,7 +12,7 @@ export function Chip({ children, active = false, onClick, textInput = false }: P
   const TK_HAIRLINE = 'rgba(255,255,255,0.07)'
   return (
     <button
-      onClick={onClick}
+      onClick={onClick && (() => { tapFeedback(); onClick() })}
       style={{
         display: 'inline-block',
         padding: '4px 13px',
