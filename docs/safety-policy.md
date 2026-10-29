@@ -38,4 +38,10 @@ Dependencies must already be installed. No new dependency is needed.
 - `npm run build`: restore final PWA output.
 - `npm run test:sw`: use the final PWA build to test activation over an existing service worker and preserve synthetic IndexedDB data, on loopback port 4191.
 
-Browser tools default to the environment's installed Playwright Core and `/usr/sbin/chromium`. All tests create isolated browser contexts and synthetic records. Screenshots and logs go outside the worktree under `/home/taymur/.hermes/cache/scratch/fastdiet-safety-artifacts`. No original user database, native platform file, secrets, deployment, or external account is accessed.
+Browser tools default to the environment's installed Playwright Core and `/usr/sbin/chromium`. All tests create isolated browser contexts and synthetic records. Screenshots and logs go outside the worktree under `/home/taymur/.hermes/cache/scratch/fastdiet-ui-artifacts`. No original user database, native platform file, secrets, deployment, or external account is accessed.
+
+## Branded profile presentation
+
+Onboarding, ordinary profile editing, and restricted safety review use the original sentence chips, shared floating scrubber cards, segmented controls, and branded footer. Actual current weight has its own chip, separate from goal weight. The always-visible suitability card includes the complete exclusions and clinical caveats and a current-version acknowledgement (unchecked for new profiles). Restricted review explains that records are retained.
+
+Numeric cards use strict entry: a typed invalid age or below-floor goal remains visible and is rejected by policy rather than clamped on blur. Opening/closing a card, focusing/blurring its input, and changing display units do not change measurements or append history. Missing/malformed restored numeric fields prompt for confirmation; opening a card does not fill a default. The original clamping/rounding height and weight wrappers are deliberately bypassed here in favor of their shared NumberInput primitive to preserve raw conversion precision. Previews still require the complete current policy and retained history. Save/revocation errors and retry controls remain available, with save errors visible above the footer; pending operations disable back/cancel, acknowledgement, card dismiss, and editor inputs.
