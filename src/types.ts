@@ -3,6 +3,10 @@ export type Units = 'metric' | 'imperial'
 export type EntryKind = 'meal' | 'melt' | 'activityBank'
 
 export interface UserProfile {
+  currentWeightMeasuredAt?: string
+  currentWeightKg?: number
+  safetyAcknowledged?: boolean
+  safetyReviewVersion?: number
   name: string
   sex: Sex
   age: number
@@ -35,6 +39,7 @@ export interface WorkoutEntry {
 }
 
 export interface WeightSample {
+  sequence?: number
   id: string
   date: string
   kg: number

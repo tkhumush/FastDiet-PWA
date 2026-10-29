@@ -1,6 +1,9 @@
+import { planReasons } from './safetyPolicy.ts'
 import type { MealEntry, WorkoutEntry, FastSummary, MealAllocation, Sex } from './types'
 
 export function bmrPerHour(sex: Sex, age: number, heightCm: number, targetWeightKg: number): number {
+  const reasons = planReasons({sex, age, heightCm, targetWeightKg, units: 'metric'})
+  if (reasons.length) throw new Error(reasons.join(' '))
   const daily =
     sex === 'male'
       ? 88.362 + 13.397 * targetWeightKg + 4.799 * heightCm - 5.677 * age
@@ -41,6 +44,7 @@ export function summarize(
   now = new Date(),
   bankCursor: Date | null = null
 ): FastSummary {
+  if (typeof bmrPerHr !== 'number' || !Number.isFinite(bmrPerHr) || bmrPerHr <= 0 || !Number.isFinite(activeEnergy) || activeEnergy < 0) throw new Error('A valid resting energy estimate and activity total are required.')
   const sorted = meals
     .filter(m => m.kind !== 'activityBank')
     .filter(m => !bankCursor || new Date(m.loggedAt) >= bankCursor)

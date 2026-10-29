@@ -1,7 +1,7 @@
 import { NumberInput } from './NumberInput'
 import type { Units } from '../../types'
 
-const LB_PER_KG = 2.20462
+const LB_PER_KG = 1 / 0.453592
 
 interface Props {
   valueKg: number
@@ -17,9 +17,9 @@ interface Props {
 export function WeightInput({ valueKg, onChangeKg, units, minKg, maxKg, showRange }: Props) {
   if (units === 'imperial') {
     return (
-      <NumberInput
+      <NumberInput strict
         value={+(valueKg * LB_PER_KG).toFixed(1)}
-        min={+(minKg * LB_PER_KG).toFixed(1)}
+        min={Math.ceil(minKg * LB_PER_KG * 10) / 10}
         max={+(maxKg * LB_PER_KG).toFixed(1)}
         step={0.1}
         suffix="lb"
@@ -30,9 +30,9 @@ export function WeightInput({ valueKg, onChangeKg, units, minKg, maxKg, showRang
     )
   }
   return (
-    <NumberInput
+    <NumberInput strict
       value={+valueKg.toFixed(1)}
-      min={minKg}
+      min={Math.ceil(minKg * 10) / 10}
       max={maxKg}
       step={0.1}
       suffix="kg"

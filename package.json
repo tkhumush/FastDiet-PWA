@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "build:native": "tsc -b && CAP_BUILD=1 vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test tests/safety.test.ts && node tests/run-browser.mjs",
+    "test:sw": "node tests/service-worker.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",

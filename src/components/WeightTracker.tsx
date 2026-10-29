@@ -1,3 +1,4 @@
+import { currentWeight, displayedFloor, goalFloor } from '../safetyPolicy'
 import { useState, useMemo } from 'react'
 import type { WeightSample, UserProfile, Units } from '../types'
 import { LightningTipModal } from './LightningTipModal'
@@ -243,6 +244,7 @@ function MiniChart({ data, target, units, height = 150 }: { data: ChartPoint[]; 
 type ActiveChip = 'current' | 'target' | null
 
 export function WeightTracker({ weights, profile, onAdd, onDelete: _onDelete, onResetMelt, onBack, saveProfile }: Props) {
+  const [error, setError] = useState('')
   const [range, setRange] = useState<Range>('3M')
   const [active, setActive] = useState<ActiveChip>(null)
   const [pendingKg, setPendingKg] = useState<number | null>(null)
@@ -252,7 +254,7 @@ export function WeightTracker({ weights, profile, onAdd, onDelete: _onDelete, on
 
   // Weights are stored newest-first in the array
   const sortedAsc = [...weights].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-  const latestKg = weights[0]?.kg ?? profile.targetWeightKg
+  const latestKg = currentWeight(profile, weights) as number
 
   const filtered = useMemo(() => {
     const cut = cutoffDate(range)
@@ -288,8 +290,9 @@ export function WeightTracker({ weights, profile, onAdd, onDelete: _onDelete, on
   function openTarget() { setPendingTargetKg(profile.targetWeightKg); setActive('target') }
   function closeAll() { setActive(null); setPendingKg(null); setPendingTargetKg(null) }
 
-  function logReading() {
-    const kg = +((pendingKg ?? latestKg)).toFixed(1)
+  async function logReading() {
+    try {
+    const kg = pendingKg ?? latestKg
     // Check for weight loss vs most recent entry
     const previousKg = weights[0]?.kg
     if (previousKg !== undefined && weights.length >= 1) {
@@ -297,17 +300,17 @@ export function WeightTracker({ weights, profile, onAdd, onDelete: _onDelete, on
       const wholeLbs = Math.floor(lbsLost)
       if (wholeLbs >= 1) setTipLbsLost(wholeLbs)
     }
-    onAdd({ id: crypto.randomUUID(), date: new Date().toISOString(), kg })
+    await onAdd({ id: crypto.randomUUID(), date: new Date().toISOString(), kg })
     closeAll()
+    } catch (e) {setError(e instanceof Error ? e.message : 'Save failed')}
   }
 
-  function saveTarget() {
+  async function saveTarget() {
     if (!saveProfile) {
       closeAll()
       return
     }
-    saveProfile({ ...profile, targetWeightKg: pendingTargetKg ?? profile.targetWeightKg })
-    closeAll()
+    try { await saveProfile({ ...profile, targetWeightKg: pendingTargetKg ?? profile.targetWeightKg }); closeAll() } catch (e) {setError(e instanceof Error ? e.message : 'Save failed')}
   }
 
   const meltedLbs = profile.cumulativeBankedCalories / 3500
@@ -352,9 +355,10 @@ export function WeightTracker({ weights, profile, onAdd, onDelete: _onDelete, on
         onClose={closeAll}
         primary={{ label: 'Save goal', onClick: saveTarget }}
       >
+        <p>Minimum goal: {displayedFloor(profile.heightCm, profile.units)} {profile.units === 'metric' ? 'kg' : 'lb'}</p>
         <WeightInput
           valueKg={targetKgDisplay}
-          minKg={30}
+          minKg={goalFloor(profile.heightCm)}
           maxKg={200}
           units={profile.units}
           onChangeKg={setPendingTargetKg}
@@ -375,6 +379,7 @@ export function WeightTracker({ weights, profile, onAdd, onDelete: _onDelete, on
         overflow: 'hidden',
       }}
     >
+      {error && <p role="alert">{error}</p>}
       <div style={{ minHeight: '100dvh', overflow: 'auto' }}>
         <div
           style={{
