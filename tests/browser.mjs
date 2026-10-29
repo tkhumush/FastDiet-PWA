@@ -1,8 +1,9 @@
+import {field,fill,units as chooseUnits} from './profile-controls.mjs'
 const {chromium} = await import(process.env.BROWSER_CORE_PATH || '/home/taymur/.hermes/hermes-agent/node_modules/playwright-core/index.mjs')
 import assert from 'node:assert/strict'
 const browser = await chromium.launch({executablePath:'/usr/sbin/chromium',headless:true,args:['--no-sandbox']})
 const base = 'http://127.0.0.1:4190'
-const artifacts = '/home/taymur/.hermes/cache/scratch/fastdiet-safety-artifacts'
+const artifacts = '/home/taymur/.hermes/cache/scratch/fastdiet-ui-artifacts'
 let count = 0
 const healthy = {name:'Synthetic',sex:'female',age:30,heightCm:170,targetWeightKg:65,currentWeightKg:75,units:'metric',bankedCalories:0,cumulativeBankedCalories:0,lastActivityBankDate:null,lastWeeklyCheckInDate:null,safetyAcknowledged:true,safetyReviewVersion:1}
 async function setup(profile) {
@@ -42,8 +43,8 @@ try {
  }
  for (const units of ['metric','imperial']) {
   const context=await browser.newContext({viewport:{width:390,height:844}});const page=await context.newPage();await page.goto(base+'/app')
-  await page.getByLabel('Units',{exact:true}).selectOption(units)
-  await page.getByLabel('Actual current weight').fill(units==='metric'?'75':'165')
+  await chooseUnits(page,units)
+  await fill(page,'Actual current weight',units==='metric'?'75':'165')
   await page.getByRole('checkbox').check()
   if(units==='metric') await page.screenshot({path:artifacts+'/onboarding-policy.png',fullPage:true})
   await page.getByRole('button',{name:'Save and continue'}).click()
@@ -70,7 +71,7 @@ try {
   })
   assert.equal(result.incidentalCount,1);assert.equal(result.blocked,true);assert.ok(result.weights.some(w=>w.kg===30))
   await page.reload();await page.getByRole('heading',{name:'Profile safety review'}).waitFor()
-  await page.getByLabel('Actual current weight').fill('76');await page.getByRole('button',{name:'Save and continue'}).click()
+  await fill(page,'Actual current weight','76');await page.getByRole('button',{name:'Save and continue'}).click()
   await page.getByRole('heading',{name:'Profile safety review'}).waitFor({state:'hidden'})
   assert.equal(await page.getByRole('heading',{name:'Profile safety review'}).count(),0)
   await page.evaluate(async()=>{const db=await import('/src/db.ts');await db.revokeSuitability()})
@@ -80,13 +81,13 @@ try {
  {
   const {context,page}=await setup(healthy);await page.reload()
   await page.getByRole('button',{name:'Profile',exact:true}).click()
-  await page.getByLabel('Height (cm)').fill('220')
+  await fill(page,'Height (cm)','220')
   await page.getByRole('button',{name:'Save and continue'}).click()
   await page.getByRole('alert').waitFor()
   assert.equal((await page.evaluate(async()=> (await (await import('/src/db.ts')).getProfile()).heightCm)),170)
-  await page.getByLabel('Height (cm)').fill('170')
-  await page.getByLabel('Goal weight').fill('66')
-  await page.getByLabel('Actual current weight').fill('76')
+  await fill(page,'Height (cm)','170')
+  await fill(page,'Goal weight','66')
+  await fill(page,'Actual current weight','76')
   const beforeFailure=await snapshot(page)
   await page.evaluate(()=>{const original=IDBObjectStore.prototype.put;let fail=true;IDBObjectStore.prototype.put=function(...args){if(this.name==='profile' && fail){fail=false;throw new DOMException('Synthetic save failure','QuotaExceededError')}return original.apply(this,args)}})
   await page.getByRole('button',{name:'Save and continue'}).click()
@@ -141,8 +142,8 @@ try {
   const {context,page}=await setup(healthy)
   await page.evaluate(async()=>{await (await import('/src/db.ts')).addWeight({id:'recent',date:new Date().toISOString(),kg:77})})
   await page.reload();await page.getByRole('button',{name:'Profile',exact:true}).click()
-  assert.equal(await page.getByLabel('Actual current weight').inputValue(),'77')
-  await page.getByLabel('Name',{exact:true}).fill('Synthetic corrected name')
+  assert.equal(await (await field(page,'Actual current weight')).inputValue(),'77')
+  await fill(page,'Name','Synthetic corrected name')
   await page.getByRole('button',{name:'Save and continue'}).click()
   await page.getByRole('button',{name:'Profile',exact:true}).waitFor()
   assert.equal(await page.evaluate(async()=> (await (await import('/src/db.ts')).getWeights()).length),2)
@@ -152,7 +153,7 @@ try {
   const {context,page}=await setup(healthy);await page.reload()
   await page.getByRole('button',{name:'Profile',exact:true}).click()
   // Ordinary unsaved profile edits must still allow Back.
-  await page.getByLabel('Name',{exact:true}).fill('Unsaved')
+  await fill(page,'Name','Unsaved')
   await page.getByRole('button',{name:'Back',exact:true}).click()
   await page.getByRole('button',{name:'Profile',exact:true}).click()
   const before=await snapshot(page)
@@ -166,7 +167,7 @@ try {
   await page.getByRole('button',{name:'Back',exact:true}).click()
   assert.equal(await page.getByRole('button',{name:'Log meal',exact:true}).count(),0,'failed revocation must keep dashboard inaccessible after Back')
   assert.equal(await page.getByRole('checkbox').isChecked(),false,'rerender must not restore persisted acknowledgement')
-  await page.getByLabel('Name',{exact:true}).fill('Synthetic reaffirmed')
+  await fill(page,'Name','Synthetic reaffirmed')
   await page.getByRole('button',{name:'Save and continue'}).click()
   assert.equal(await page.getByRole('button',{name:'Log meal',exact:true}).count(),0)
   assert.equal(await snapshot(page),before,'failed writes preserve stored profile and history')

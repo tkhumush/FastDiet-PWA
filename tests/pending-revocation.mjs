@@ -1,3 +1,4 @@
+import {field,fill} from './profile-controls.mjs'
 import assert from 'node:assert/strict'
 const {chromium}=await import(process.env.BROWSER_CORE_PATH || '/home/taymur/.hermes/hermes-agent/node_modules/playwright-core/index.mjs')
 const browser=await chromium.launch({executablePath:'/usr/sbin/chromium',headless:true,args:['--no-sandbox']})
@@ -18,20 +19,24 @@ try{
  for(const fail of (process.env.RACE_NEGATIVE_ONLY ? [true] : [false,true])){
   const {context,page}=await setup();const before=await history(page)
   await page.getByRole('button',{name:'Back',exact:true}).click();await page.getByRole('button',{name:'Profile',exact:true}).click()
-  await lock(page);await page.getByLabel('Name',{exact:true}).fill('Older pending save');await page.getByRole('button',{name:'Save and continue',exact:true}).click()
+  await lock(page);await fill(page,'Name','Older pending save');await page.getByRole('button',{name:'Save and continue',exact:true}).click()
+  assert.equal(await page.getByRole('button',{name:'Cancel',exact:true}).isDisabled(),true)
+  assert.equal(await page.getByRole('checkbox').isDisabled(),true)
+  assert.equal(await page.getByLabel('Name',{exact:true}).isDisabled(),true)
+  assert.equal(await page.getByRole('button',{name:'Close',exact:true}).count(),0,'pending editor cannot be dismissed')
   const backDisabled=await page.getByRole('button',{name:'Back',exact:true}).isDisabled()
   // Invoke the real React Back handler even when disabled: exercise the hook race.
   await page.getByRole('button',{name:'Back',exact:true}).evaluate(button=>{const key=Object.keys(button).find(k=>k.startsWith('__reactProps$'));button[key].onClick()})
   await page.getByRole('button',{name:'Profile',exact:true}).click();await failure(page,fail);await page.getByRole('checkbox').uncheck();await release(page)
-  await page.waitForFunction(()=>document.body.innerText.includes('Log meal') || document.body.innerText.includes('Save and continue'))
+  await page.waitForFunction(()=>document.body.innerText.includes('Log meal') || document.querySelector('[aria-label="Save and continue"]'))
   assert.equal(await page.getByRole('button',{name:'Log meal',exact:true}).count(),0,'older save must not restore dashboard')
   assert.equal(backDisabled,true,'Back must be disabled while saving')
   if(fail)await page.getByRole('alert').waitFor()
   assert.equal(await page.getByRole('checkbox').isChecked(),false)
-  assert.equal(await page.getByLabel('Name',{exact:true}).inputValue(),'Synthetic','superseded completion must preserve latest draft')
+  assert.equal(await (await field(page,'Name')).inputValue(),'Synthetic','superseded completion must preserve latest draft')
   assert.equal(await page.evaluate(async()=> (await (await import('/src/db.ts')).getProfile()).safetyAcknowledged),fail,'failed negative persistence must not be reported as durable')
   assert.equal(await history(page),before)
-  await page.getByLabel('Name',{exact:true}).fill('Latest draft');await page.getByRole('checkbox').check()
+  await fill(page,'Name','Latest draft');await page.getByRole('checkbox').check()
   await page.evaluate(()=>{window.failAll=true});await page.getByRole('button',{name:'Save and continue',exact:true}).click();await page.getByRole('alert').filter({hasText:'Synthetic persistence failure'}).waitFor()
   assert.equal(await page.getByRole('button',{name:'Log meal',exact:true}).count(),0)
   await page.evaluate(()=>{window.failAll=false;window.failNegative=false});await page.getByRole('button',{name:'Save and continue',exact:true}).click();await page.getByRole('button',{name:'Log meal',exact:true}).waitFor();assert.equal(await history(page),before)
@@ -40,7 +45,7 @@ try{
  // Mount the actual hook to exercise background callbacks and overlapping reaffirmation.
  for(const explicit of [false,true]){
   const {context,page}=await setup();const before=await history(page)
-  await page.evaluate(async()=>{const React=await import('/node_modules/.vite/deps/react.js');const client=await import('/node_modules/.vite/deps/react-dom_client.js');const createRoot=client.createRoot || client.default.createRoot;const {useProfile}=await import('/src/store.ts');const el=document.createElement('div');document.body.append(el);function Probe(){window.hook=useProfile();return null}createRoot(el).render((React.createElement || React.default.createElement)(Probe))})
+  await page.evaluate(async()=>{const storeSource=await (await fetch('/src/store.ts')).text();const mainSource=await (await fetch('/src/main.tsx')).text();const reactPath=storeSource.match(/from ["']([^"']*\/react\.js[^"']*)["']/)[1];const clientPath=mainSource.match(/from ["']([^"']*react-dom_client\.js[^"']*)["']/)[1];const React=await import(reactPath);const client=await import(clientPath);const createRoot=client.createRoot || client.default.createRoot;const {useProfile}=await import('/src/store.ts');const el=document.createElement('div');document.body.append(el);function Probe(){window.hook=useProfile();return null}createRoot(el).render((React.createElement || React.default.createElement)(Probe))})
   await page.waitForFunction(()=>window.hook?.profile)
   await page.evaluate(async()=>{window.stale={...window.hook.profile};await window.hook.revoke()})
   await lock(page)

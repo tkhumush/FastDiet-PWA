@@ -5,13 +5,14 @@ interface Props {
   children: ReactNode
   active?: boolean
   onClick?: () => void
+  ariaLabel?: string
   textInput?: boolean
 }
 
-export function Chip({ children, active = false, onClick, textInput = false }: Props) {
+export function Chip({ children, active = false, onClick, textInput = false, ariaLabel }: Props) {
   const TK_HAIRLINE = 'rgba(255,255,255,0.07)'
   return (
-    <button
+    <button aria-label={ariaLabel}
       onClick={onClick && (() => { tapFeedback(); onClick() })}
       style={{
         display: 'inline-block',

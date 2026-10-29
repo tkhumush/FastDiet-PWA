@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { tapFeedback } from '../../lib/nativeShell'
 
 interface Props {
+  ariaLabel?: string
   children: ReactNode
   warm?: boolean
   size?: 'lg' | 'md'
@@ -10,10 +11,11 @@ interface Props {
   type?: 'button' | 'submit'
 }
 
-export function CTA({ children, warm = false, size = 'lg', onClick, disabled, type = 'button' }: Props) {
+export function CTA({ children, warm = false, size = 'lg', onClick, disabled, type = 'button', ariaLabel }: Props) {
   return (
     <button
       type={type}
+      aria-label={ariaLabel}
       onClick={onClick && (() => { tapFeedback(); onClick() })}
       disabled={disabled}
       style={{

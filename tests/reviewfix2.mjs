@@ -1,3 +1,4 @@
+import {field,fill} from './profile-controls.mjs'
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
 const {chromium}=await import(process.env.BROWSER_CORE_PATH || '/home/taymur/.hermes/hermes-agent/node_modules/playwright-core/index.mjs')
@@ -26,7 +27,7 @@ try {
  })
  await test('missing restored age remains blank until explicit correction',async()=>{
   const p={...healthy};delete p.age;const {context,page}=await setup(p)
-  try{await page.getByRole('heading',{name:'Profile safety review'}).waitFor();assert.equal(await page.getByLabel('Age',{exact:true}).inputValue(),'');assert.ok(!(await page.locator('body').innerText()).includes('cal/day estimated resting'));const before=await snapshot(page);await page.getByRole('button',{name:'Save and continue'}).click();await page.getByRole('alert').waitFor();assert.equal(await snapshot(page),before);await page.getByLabel('Age',{exact:true}).fill('30');await page.getByRole('button',{name:'Save and continue'}).click();await page.getByRole('button',{name:'Profile',exact:true}).waitFor();const after=JSON.parse(await snapshot(page));assert.equal(after[0].age,30);assert.deepEqual(after.slice(1),JSON.parse(before).slice(1))}finally{await context.close()}
+  try{await page.getByRole('heading',{name:'Profile safety review'}).waitFor();assert.equal(await (await field(page,'Age')).inputValue(),'');assert.ok(!(await page.locator('body').innerText()).includes('cal/day estimated resting'));const before=await snapshot(page);await page.getByRole('button',{name:'Save and continue'}).click();await page.getByRole('alert').waitFor();assert.equal(await snapshot(page),before);await fill(page,'Age','30');await page.getByRole('button',{name:'Save and continue'}).click();await page.getByRole('button',{name:'Profile',exact:true}).waitFor();const after=JSON.parse(await snapshot(page));assert.equal(after[0].age,30);assert.deepEqual(after.slice(1),JSON.parse(before).slice(1))}finally{await context.close()}
  })
  await test('missing restored balance fails save without mutation',async()=>{
   const p={...healthy};delete p.bankedCalories;const {context,page}=await setup(p)
@@ -34,6 +35,6 @@ try {
  })
  await test('malformed older history blocks preview and changed-measurement save',async()=>{
   const weights=[{id:'bad',date:'2026-01-01',kg:'invalid'},{id:'good',date:'2026-02-01',kg:40}];const {context,page}=await setup(healthy,weights)
-  try{await page.getByRole('heading',{name:'Profile safety review'}).waitFor();assert.ok((await page.locator('body').innerText()).includes('Weight history contains an unsupported measurement'));assert.ok(!(await page.locator('body').innerText()).includes('cal/day estimated resting'));const before=await snapshot(page);await page.getByLabel('Actual current weight').fill('41');await page.getByRole('button',{name:'Save and continue'}).click();await page.getByRole('alert').waitFor();assert.equal(await snapshot(page),before);const rejected=await page.evaluate(async()=>{const db=await import('/src/db.ts');try{await db.saveProfile({...await db.getProfile(),currentWeightKg:42});return false}catch{return true}});assert.equal(rejected,true);assert.equal(await snapshot(page),before)}finally{await context.close()}
+  try{await page.getByRole('heading',{name:'Profile safety review'}).waitFor();assert.ok((await page.locator('body').innerText()).includes('Weight history contains an unsupported measurement'));assert.ok(!(await page.locator('body').innerText()).includes('cal/day estimated resting'));const before=await snapshot(page);await fill(page,'Actual current weight','41');await page.getByRole('button',{name:'Save and continue'}).click();await page.getByRole('alert').waitFor();assert.equal(await snapshot(page),before);const rejected=await page.evaluate(async()=>{const db=await import('/src/db.ts');try{await db.saveProfile({...await db.getProfile(),currentWeightKg:42});return false}catch{return true}});assert.equal(rejected,true);assert.equal(await snapshot(page),before)}finally{await context.close()}
  })
 }finally{await browser.close()}
