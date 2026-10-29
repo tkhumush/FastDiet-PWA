@@ -1,7 +1,7 @@
+import { safetyNotice, suitabilityNotice } from '../safetyPolicy'
 import { useEffect, useState } from 'react'
 import { CTA } from './shared/CTA'
 import { Eyebrow } from './shared/Eyebrow'
-import { DeviceMockup } from './DeviceMockup'
 import { BmrJourneyChart } from './BmrJourneyChart'
 import { InstallSteps } from '../lib/installInstructions'
 import { detectPlatform, type BeforeInstallPromptEvent } from '../lib/platform'
@@ -27,12 +27,12 @@ const FEATURES: Feature[] = [
   {
     emoji: '📉',
     title: 'Weight tracking with a real trajectory',
-    body: 'See your trend line and a projection to your goal weight — so you know your current pace is actually working.',
+    body: 'See your trend line and a projection to your goal weight — as a rough illustration, not a guaranteed outcome.',
   },
   {
     emoji: '⚡',
     title: 'Bank the burn',
-    body: 'Turn extra activity into a calorie buffer you can spend later, and watch surplus melt away over time.',
+    body: 'Record activity alongside meals. Accounting estimates do not establish fat loss or a need to compensate for food.',
   },
   {
     emoji: '📲',
@@ -41,27 +41,14 @@ const FEATURES: Feature[] = [
   },
 ]
 
-// Three screenshots layered: two behind, side by side, one in front centered.
-function PhoneStack() {
-  const back = {
-    position: 'absolute' as const,
-    top: 44,
-    zIndex: 1,
-    opacity: 0.9,
-    filter: 'brightness(0.8)',
-  }
+// Keep obsolete meal-timing screenshots out of the safety release.
+function SafetyOverview() {
   return (
-    <div style={{ position: 'relative', width: 300, height: 470, margin: '0 auto', maxWidth: '100%' }}>
-      <div style={{ ...back, left: 0, transform: 'rotate(-7deg)' }}>
-        <DeviceMockup src="/screenshots/log.png" alt="Energy log screen" width={150} />
-      </div>
-      <div style={{ ...back, right: 0, transform: 'rotate(7deg)' }}>
-        <DeviceMockup src="/screenshots/weight.png" alt="Weight tracker with projection" width={150} />
-      </div>
-      <div style={{ position: 'absolute', left: '50%', top: 0, transform: 'translateX(-50%)', zIndex: 2 }}>
-        <DeviceMockup src="/screenshots/dashboard.png" alt="FastDiet dashboard" width={200} />
-      </div>
-    </div>
+    <aside style={{padding:24, borderRadius:20, background:'var(--fd-surface)', border:'1px solid var(--fd-hairline)', maxWidth:400, margin:'auto'}}>
+      <h2 style={{fontSize:22}}>Estimates with clear limits</h2>
+      <p>{safetyNotice}</p>
+      <p>{suitabilityNotice}</p>
+    </aside>
   )
 }
 
@@ -144,7 +131,7 @@ export function Landing() {
           }}
         >
           <div style={{ flex: '1 1 320px', minWidth: 280 }}>
-            <Eyebrow>Eat at the rate of your future self</Eyebrow>
+            <Eyebrow>Track meals and weight thoughtfully</Eyebrow>
             <h1
               style={{
                 margin: '16px 0 18px',
@@ -207,7 +194,7 @@ export function Landing() {
 
           {/* Hero screenshots — layered stack */}
           <div style={{ flex: '1 1 300px', display: 'flex', justifyContent: 'center' }}>
-            <PhoneStack />
+            <SafetyOverview />
           </div>
         </section>
 
@@ -232,15 +219,10 @@ export function Landing() {
                 lineHeight: 1.15,
               }}
             >
-              Live at your slimmer self's burn rate — starting today
+              Understand estimated resting energy
             </h2>
             <p style={{ margin: 0, fontSize: 16, lineHeight: 1.65, color: 'var(--fd-muted)', maxWidth: 460 }}>
-              Right now your body burns more than it will at your goal weight. Instead of waiting,
-              FastDiet holds your daily intake to your{' '}
-              <strong style={{ color: 'var(--fd-text)', fontWeight: 600 }}>goal-weight BMR</strong> — the
-              rate your future, slimmer self burns. You live on that new standard from day one. The gap
-              between the two rates is a daily deficit, drawn automatically from stored fat — and it
-              closes as your weight settles into your goal.
+              {safetyNotice} {suitabilityNotice}
             </p>
           </div>
           <div style={{ flex: '1 1 360px', minWidth: 300 }}>
@@ -253,7 +235,7 @@ export function Landing() {
               }}
             >
               <h3 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em' }}>
-                BMR Journey
+                Illustrative resting energy curve
               </h3>
               <BmrJourneyChart />
             </div>
@@ -327,7 +309,7 @@ export function Landing() {
           }}
         >
           <p style={{ margin: '0 0 6px', color: 'var(--fd-muted)' }}>
-            Eat at the rate of your future, slimmer self.
+            Track meals, activity, and weight with care.
           </p>
           <p style={{ margin: 0 }}>© {new Date().getFullYear()} FastDiet</p>
         </footer>

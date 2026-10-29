@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 interface Props {
+  strict?: boolean
   value: number
   min: number
   max: number
@@ -24,7 +25,7 @@ function decimalsFor(step: number): number {
 // A typed numeric field. Replaces the drag slider for precise entry. Keeps a
 // local string while focused so partial input ("", "7", "7.") is never fought
 // by re-renders, then clamps and normalises on blur.
-export function NumberInput({ value, min, max, step = 1, onChange, showRange = false, suffix, ariaLabel }: Props) {
+export function NumberInput({ strict = false, value, min, max, step = 1, onChange, showRange = false, suffix, ariaLabel }: Props) {
   const prec = decimalsFor(step)
   const [focused, setFocused] = useState(false)
   const [text, setText] = useState(() => value.toFixed(prec))
@@ -33,19 +34,20 @@ export function NumberInput({ value, min, max, step = 1, onChange, showRange = f
   // Reflect external value changes (e.g. quick buttons, unit toggles) unless
   // the user is actively typing. Adjusting state during render is React's
   // recommended pattern here, avoiding a setState-in-effect cascade.
-  if (!focused && value !== lastValue) {
+  if (!focused && !Object.is(value, lastValue)) {
     setLastValue(value)
     setText(value.toFixed(prec))
   }
 
   function handleInput(raw: string) {
     setText(raw)
-    const n = parseFloat(raw)
-    if (!Number.isNaN(n)) onChange(n)
+    const n = raw.trim() === '' ? NaN : Number(raw)
+    if (strict || !Number.isNaN(n)) onChange(n)
   }
 
   function commit() {
     setFocused(false)
+    if (strict) { onChange(text.trim() === '' ? NaN : Number(text)); return }
     const n = parseFloat(text)
     if (Number.isNaN(n)) {
       setText(value.toFixed(prec))

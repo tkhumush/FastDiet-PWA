@@ -1,3 +1,4 @@
+import { safetyNotice } from '../safetyPolicy'
 import { useState } from 'react'
 import type { MealEntry, UserProfile, WorkoutEntry } from '../types'
 import { summarize, bmrPerHour, activeEnergyFor } from '../fastingMath'
@@ -328,7 +329,7 @@ function EntryRow({
         >
           <span style={{ color: TK.text, fontWeight: 700 }}>+{meal.calories} cal</span>
           {burnedFully ? (
-            <> · <span style={{ color: TK.teal }}>✓ burned</span></>
+            <> · <span style={{ color: TK.teal }}>✓ accounted</span></>
           ) : (
             <> · <span style={{ color: TK.coral }}>{owed} left</span></>
           )}
@@ -476,6 +477,7 @@ export function EnergyLog({ meals, workouts, profile, onUpdate, onDelete, onDele
         overflow: 'hidden',
       }}
     >
+      <p style={{padding:16}}>{safetyNotice}</p>
       <div style={{ minHeight: '100dvh', overflow: 'auto' }}>
         <div
           style={{
@@ -535,7 +537,7 @@ export function EnergyLog({ meals, workouts, profile, onUpdate, onDelete, onDele
               <span style={{ color: TK.coral, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>−{burnedToday} cal</span>
               .&nbsp;
               <span style={{ color: TK.text, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{owedToday} cal</span>
-              &nbsp;still owed.
+              &nbsp;remaining in the accounting estimate.
             </div>
           </div>
 
@@ -543,7 +545,7 @@ export function EnergyLog({ meals, workouts, profile, onUpdate, onDelete, onDele
           <div style={{ display: 'flex', gap: 8, marginBottom: 22 }}>
             <SummaryStat label="Ate" value={`+${ateToday}`} accent={TK.teal} />
             <SummaryStat label="Burned" value={`−${burnedToday}`} accent={TK.coral} />
-            <SummaryStat label="Owed" value={owedToday} accent={TK.text} />
+            <SummaryStat label="Estimated balance" value={owedToday} accent={TK.text} />
           </div>
 
           {/* Entry list */}

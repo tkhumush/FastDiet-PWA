@@ -1,8 +1,15 @@
-import { useState, useEffect, useCallback } from 'react'
+import { weightNewestFirst } from './safetyPolicy'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { UserProfile, MealEntry, WeightSample, WorkoutEntry } from './types'
 import * as db from './db'
 
+export class SupersededProfileSaveError extends Error {
+  constructor() { super('Profile save superseded by suitability withdrawal.'); this.name = 'SupersededProfileSaveError' }
+}
+
 export function useProfile() {
+  const revocationGeneration = useRef(0)
+  const restricted = useRef(false)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -13,12 +20,33 @@ export function useProfile() {
     })
   }, [])
 
-  const save = useCallback(async (p: UserProfile) => {
-    await db.saveProfile(p)
+  const save = useCallback(async (p: UserProfile, options?: {reaffirm: true}) => {
+    const generation = revocationGeneration.current
+    const assertCurrent = () => {
+      if (generation !== revocationGeneration.current || (restricted.current && !options?.reaffirm)) {
+        throw new SupersededProfileSaveError()
+      }
+    }
+    assertCurrent()
+    // Check again inside the transaction, after any IndexedDB lock has cleared.
+    await db.saveProfile(p, assertCurrent)
+    assertCurrent()
+    restricted.current = false
     setProfile(p)
+    // Callers must also check after their own asynchronous follow-up work.
+    return assertCurrent
   }, [])
 
-  return { profile, loading, save }
+  const revoke = useCallback(async () => {
+    // This latch survives failed persistence and stale callbacks. Only an explicit
+    // validated reaffirmation begun in this generation can release it.
+    revocationGeneration.current += 1
+    restricted.current = true
+    setProfile(p => p ? {...p, safetyAcknowledged: false} : p)
+    await db.revokeSuitability()
+  }, [])
+
+  return { profile, loading, save, revoke }
 }
 
 export function useMeals() {
@@ -50,11 +78,13 @@ export function useMeals() {
 }
 
 export function useWeights() {
+  const [loading, setLoading] = useState(true)
   const [weights, setWeights] = useState<WeightSample[]>([])
 
   const refresh = useCallback(async () => {
     const all = await db.getWeights()
-    setWeights(all.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
+    setLoading(false)
+    setWeights(all.sort(weightNewestFirst))
   }, [])
 
   useEffect(() => { refresh() }, [refresh])
@@ -69,7 +99,7 @@ export function useWeights() {
     await refresh()
   }, [refresh])
 
-  return { weights, add, remove }
+  return { weights, loading, add, remove, refresh }
 }
 
 export function useWorkouts() {

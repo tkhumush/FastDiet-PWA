@@ -30,7 +30,7 @@ export default defineConfig({
       manifest: {
         name: 'FastDiet',
         short_name: 'FastDiet',
-        description: 'Eat at the rate of your future, slimmer self.',
+        description: 'Local meal, activity, and weight tracking.',
         theme_color: '#0a0a0a',
         background_color: '#0a0a0a',
         display: 'standalone',
