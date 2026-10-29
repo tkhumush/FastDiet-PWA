@@ -24,11 +24,14 @@ function decimalsFor(step: number): number {
 
 // A typed numeric field. Replaces the drag slider for precise entry. Keeps a
 // local string while focused so partial input ("", "7", "7.") is never fought
-// by re-renders, then clamps and normalises on blur.
+// by re-renders. Strict mode preserves raw input and delegates validation to
+// policy; focusing or blurring never changes a strict value. Other callers
+// retain their existing clamped entry behavior.
 export function NumberInput({ strict = false, value, min, max, step = 1, onChange, showRange = false, suffix, ariaLabel }: Props) {
   const prec = decimalsFor(step)
+  const format = (n: number) => Number.isFinite(n) ? (strict ? String(n) : n.toFixed(prec)) : ''
   const [focused, setFocused] = useState(false)
-  const [text, setText] = useState(() => value.toFixed(prec))
+  const [text, setText] = useState(() => format(value))
   const [lastValue, setLastValue] = useState(value)
 
   // Reflect external value changes (e.g. quick buttons, unit toggles) unless
@@ -36,7 +39,7 @@ export function NumberInput({ strict = false, value, min, max, step = 1, onChang
   // recommended pattern here, avoiding a setState-in-effect cascade.
   if (!focused && !Object.is(value, lastValue)) {
     setLastValue(value)
-    setText(value.toFixed(prec))
+    setText(format(value))
   }
 
   function handleInput(raw: string) {
@@ -47,10 +50,10 @@ export function NumberInput({ strict = false, value, min, max, step = 1, onChang
 
   function commit() {
     setFocused(false)
-    if (strict) { onChange(text.trim() === '' ? NaN : Number(text)); return }
+    if (strict) return
     const n = parseFloat(text)
     if (Number.isNaN(n)) {
-      setText(value.toFixed(prec))
+      setText(format(value))
       return
     }
     const clamped = Math.max(min, Math.min(max, n))
